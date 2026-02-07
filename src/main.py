@@ -25,3 +25,9 @@ activities_iterator = client.get_activities(after=jan_first)
 activities = list(activities_iterator)
 
 total_activities = len(activities)
+total_mileage = 0
+
+for activity in activities:
+  total_mileage += activity.distance / 1609.344
+
+print(total_activities, total_mileage)
