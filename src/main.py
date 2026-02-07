@@ -28,8 +28,12 @@ activities = list(activities_iterator)
 
 total_activities = len(activities)
 total_mileage = 0
+latest_activity = {
+  'miles': activities[-1].distance / 1609.344,
+  'seconds': activities[-1].moving_time
+}
 
 for activity in activities:
   total_mileage += activity.distance / 1609.344
 
-print(total_activities, total_mileage, total_mileage / weeks_ytd)
+print(total_activities, total_mileage, total_mileage / weeks_ytd, latest_activity)
