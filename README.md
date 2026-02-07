@@ -28,3 +28,23 @@ git clone https://github.com/waveshare/e-Paper.git
 cd e-Paper/RaspberryPi_JetsonNano/python
 sudo python3 setup.py install
 ```
+
+### 4. Generate Strava API tokens
+
+1. Go to [Strava API Settings](https://www.strava.com/settings/api).
+2. Create a new application if you haven’t already.
+3. Copy the following values for your app:
+   - **Client ID**
+   - **Client Secret**
+   - **Refresh Token**
+4. Copy `.env-example` to `.env` and add your credentials
+
+```bash
+cp .env.example .env
+```
+
+```
+STRAVA_CLIENT_ID=your_client_id
+STRAVA_CLIENT_SECRET=your_client_secret
+STRAVA_REFRESH_TOKEN=your_refresh_token
+```
