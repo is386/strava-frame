@@ -20,6 +20,8 @@ client.access_token = tokens['access_token']
 
 now = datetime.now()
 jan_first = datetime(year=now.year, month=1, day=1)
+days_ytd = (now - jan_first).days + 1
+weeks_ytd = days_ytd / 7
 
 activities_iterator = client.get_activities(after=jan_first)
 activities = list(activities_iterator)
@@ -30,4 +32,4 @@ total_mileage = 0
 for activity in activities:
   total_mileage += activity.distance / 1609.344
 
-print(total_activities, total_mileage)
+print(total_activities, total_mileage, total_mileage / weeks_ytd)
