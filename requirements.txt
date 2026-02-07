@@ -1,0 +1,7 @@
+requests==2.32.5
+python-dotenv==1.2.1
+stravalib==2.4
+pandas==3.0.0
+numpy==2.4.2
+pillow==12.1.0
+schedule==1.2.2
