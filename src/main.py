@@ -23,3 +23,5 @@ jan_first = datetime(year=now.year, month=1, day=1)
 
 activities_iterator = client.get_activities(after=jan_first)
 activities = list(activities_iterator)
+
+total_activities = len(activities)
