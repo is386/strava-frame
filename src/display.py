@@ -4,7 +4,7 @@ def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_
     # =========================
     # Display configuration
     # =========================
-    WIDTH, HEIGHT = 800, 400
+    WIDTH, HEIGHT = 800, 480
     HEADER_HEIGHT = 60
     OUTPUT_FILE = "dashboard_preview.png"
 
@@ -43,7 +43,7 @@ def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_
     LEFT_COLUMN_WIDTH = WIDTH // 3
     COLUMN_CENTER_X = LEFT_COLUMN_WIDTH // 2
     START_Y = HEADER_HEIGHT + 25
-    METRIC_SPACING = 100
+    METRIC_SPACING = (HEIGHT - HEADER_HEIGHT) / 3
 
     # =========================
     # Helper: draw stacked metric
