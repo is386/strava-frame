@@ -1,3 +1,4 @@
+from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -36,7 +37,8 @@ def render(
     # =========================
     # Header text (centered)
     # =========================
-    title = "Strava Dashboard 2026"
+    now = datetime.now()
+    title = f"Strava Dashboard {now.year}"
     bbox = draw.textbbox((0, 0), title, font=header_font)
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
