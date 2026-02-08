@@ -3,9 +3,11 @@ import numpy as np
 from dotenv import load_dotenv
 from stravalib.client import Client
 from stravalib.model import SummaryActivity
+from requests.exceptions import RequestException
 from datetime import datetime
 from typing import Tuple
 from display import render
+from time import sleep
 
 
 def meters_to_miles(meters: int) -> int:
@@ -100,16 +102,29 @@ def parse_yearly_data(
     )
 
 
-activities = get_yearly_strava_activities()
-latest_activity = parse_latest_activity(activities)
-total_activities, total_mileage, avg_weekly_mileage, mileage_per_month = (
-    parse_yearly_data(activities)
-)
+activities_cache = []
 
-render(
-    total_mileage,
-    avg_weekly_mileage,
-    total_activities,
-    list(mileage_per_month),
-    latest_activity,
-)
+while True:
+    try:
+        activities = get_yearly_strava_activities()
+        activities_cache = activities
+    except (RuntimeError, RequestException):
+        activities = activities_cache
+
+    latest_activity = parse_latest_activity(activities)
+    (
+        total_activities,
+        total_mileage,
+        avg_weekly_mileage,
+        mileage_per_month,
+    ) = parse_yearly_data(activities)
+
+    render(
+        total_mileage,
+        avg_weekly_mileage,
+        total_activities,
+        list(mileage_per_month),
+        latest_activity,
+    )
+
+    sleep(15 * 60)
