@@ -1,6 +1,13 @@
 from PIL import Image, ImageDraw, ImageFont
 
-def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_activity):
+
+def render(
+    total_mileage,
+    weekly_mileage,
+    activities,
+    mileage_per_month,
+    latest_activity,
+):
     # =========================
     # Display configuration
     # =========================
@@ -72,8 +79,19 @@ def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_
     # Draw stacked metrics (left column)
     # =========================
     draw_metric(COLUMN_CENTER_X, START_Y, total_mileage, "Miles")
-    draw_metric(COLUMN_CENTER_X, START_Y + METRIC_SPACING, weekly_mileage, "Miles per Week")
-    draw_metric(COLUMN_CENTER_X, START_Y + 2 * METRIC_SPACING, activities, "Activities", show_dec=False)
+    draw_metric(
+        COLUMN_CENTER_X,
+        START_Y + METRIC_SPACING,
+        weekly_mileage,
+        "Miles per Week",
+    )
+    draw_metric(
+        COLUMN_CENTER_X,
+        START_Y + 2 * METRIC_SPACING,
+        activities,
+        "Activities",
+        show_dec=False,
+    )
 
     # =========================
     # Vertical divider between columns
@@ -82,23 +100,35 @@ def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_
     draw.line(
         [(divider_x, HEADER_HEIGHT + 10), (divider_x, HEIGHT - 20)],
         fill=180,
-        width=1
+        width=1,
     )
 
     # =========================
     # Right column layout
     # =========================
-    RIGHT_X_START = LEFT_COLUMN_WIDTH + 20
     RIGHT_WIDTH = WIDTH - LEFT_COLUMN_WIDTH - 40
     TOP_HEIGHT = (HEIGHT - HEADER_HEIGHT - 40) // 2
-    BOTTOM_Y_START = HEADER_HEIGHT + 20 + TOP_HEIGHT
 
     # =========================
     # Draw bar graph (top half of right column) with label
     # =========================
-    months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ]
     bar_width = RIGHT_WIDTH // 12 - 8  # space between bars
     max_value = max(mileage_per_month) if mileage_per_month else 1
+    max_value = 1 if max_value == 0 else max_value
     bar_max_height = TOP_HEIGHT - 30  # leave padding at top and bottom
 
     # Top of graph area
@@ -116,7 +146,9 @@ def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_
     # Bars start a fixed distance below the title
     BAR_TOP_MARGIN = 5  # space between title and bars
     bar_top_start = label_y + label_h + BAR_TOP_MARGIN
-    bar_max_height = TOP_HEIGHT - (bar_top_start - GRAPH_TOP) - 10  # leave bottom padding
+    bar_max_height = (
+        TOP_HEIGHT - (bar_top_start - GRAPH_TOP) - 10
+    )  # leave bottom padding
     GRAPH_BOTTOM = bar_top_start + bar_max_height
 
     # Draw bars
@@ -139,17 +171,21 @@ def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_
     # Horizontal divider under the graph
     # =========================
     LABEL_MARGIN = 4  # same as month label margin
-    divider_y = GRAPH_BOTTOM + LABEL_MARGIN + label_h + 15  # below the month labels
+    divider_y = (
+        GRAPH_BOTTOM + LABEL_MARGIN + label_h + 15
+    )  # below the month labels
     draw.line(
         [(LEFT_COLUMN_WIDTH + 20, divider_y), (WIDTH - 20, divider_y)],
         fill=180,
-        width=1
+        width=1,
     )
 
     # =========================
     # Draw latest activity title in bottom half
     # =========================
-    latest_title_font = ImageFont.truetype("assets/segoeuib.ttf", 22)  # bold font
+    latest_title_font = ImageFont.truetype(
+        "assets/segoeuib.ttf", 22
+    )  # bold font
     title_text = latest_activity.get("title", "")
 
     # Compute position: left-aligned in right column, top of bottom half
@@ -165,9 +201,11 @@ def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_
     # Draw latest activity date under the title
     # =========================
     date_text = latest_activity.get("date", "")  # string like "February 7"
-    date_font = ImageFont.truetype("assets/segoeui.ttf", 18) 
+    date_font = ImageFont.truetype("assets/segoeui.ttf", 18)
     date_x = title_x  # same left alignment as title
-    date_y = title_y + (title_bbox[3] - title_bbox[1]) + 7 # 5 pixels below title
+    date_y = (
+        title_y + (title_bbox[3] - title_bbox[1]) + 7
+    )  # 5 pixels below title
 
     draw.text((date_x, date_y), date_text, font=date_font, fill=128)
 
@@ -177,10 +215,9 @@ def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_
 
     # Metrics to display
     metrics = [
-        
         ("Distance", f"{latest_activity.get('miles', 0):.2f} mi"),
         ("Time", latest_activity.get("time", "0:00")),
-        ("Pace", latest_activity.get("pace", "0:00"))
+        ("Pace", latest_activity.get("pace", "0:00")),
     ]
 
     # Horizontal layout
@@ -191,7 +228,9 @@ def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_
     # Compute width of each block
     block_widths = []
     for label, value in metrics:
-        value_text = f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
+        value_text = (
+            f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
+        )
         value_bbox = draw.textbbox((0, 0), value_text, font=metric_value_font)
         value_w = value_bbox[2] - value_bbox[0]
         label_bbox = draw.textbbox((0, 0), label, font=label_font_small)
@@ -215,7 +254,9 @@ def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_
     block_bottoms = []
     for i, (label, value) in enumerate(metrics):
         x = x_positions[i]
-        value_text = f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
+        value_text = (
+            f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
+        )
         value_bbox = draw.textbbox((0, 0), value_text, font=metric_value_font)
         value_h = value_bbox[3] - value_bbox[1]
         label_bbox = draw.textbbox((0, 0), label, font=label_font_small)
@@ -230,13 +271,24 @@ def render(total_mileage, weekly_mileage, activities, mileage_per_month, latest_
         # Draw value
         draw.text((x, y_top), value_text, font=metric_value_font, fill=0)
         # Draw label
-        draw.text((x+1, y_top + value_h + vertical_padding), label, font=label_font_small, fill=128)
+        draw.text(
+            (x + 1, y_top + value_h + vertical_padding),
+            label,
+            font=label_font_small,
+            fill=128,
+        )
 
     # Draw vertical dividers between blocks
     for i in range(len(metrics) - 1):
-        # Divider x: halfway between the right edge of block i and left edge of block i+1
-        x0 = x_positions[i] + block_widths[i] + (x_positions[i + 1] - (x_positions[i] + block_widths[i])) // 2
-        # Divider height: a bit shorter than block height so it doesn't overlap text
+        # Divider x: halfway between the right edge of block i and left edge
+        # of block i+1
+        x0 = (
+            x_positions[i]
+            + block_widths[i]
+            + (x_positions[i + 1] - (x_positions[i] + block_widths[i])) // 2
+        )
+        # Divider height: a bit shorter than block height so it doesn't
+        # overlap text
         y0 = block_tops[i] + 5
         y1 = block_bottoms[i] + 10
         draw.line([(x0, y0), (x0, y1)], fill=180, width=1)
