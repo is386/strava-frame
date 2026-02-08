@@ -5,6 +5,7 @@ from stravalib.client import Client
 from stravalib.model import SummaryActivity
 from datetime import datetime
 from typing import Tuple
+from display import render
 
 
 def meters_to_miles(meters: int) -> int:
@@ -57,7 +58,9 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
     'time': seconds_to_timestamp(latest_activity.moving_time),
     'pace': seconds_to_timestamp(
        calculate_pace(latest_activity.distance, latest_activity.moving_time)
-    )
+    ),
+    'title': latest_activity.name,
+    'date': latest_activity.start_date.strftime("%B %-d")
   }
 
 
@@ -83,11 +86,10 @@ activities = get_yearly_strava_activities()
 latest_activity = parse_latest_activity(activities)
 total_activities, total_mileage, avg_weekly_mileage, mileage_per_month = parse_yearly_data(activities)
 
-print(
-    f"Latest Activity: {latest_activity}",
-    f"Total Activities: {total_activities}",
-    f"Total Mileage: {total_mileage}",
-    f"Avg Weekly Mileage: {avg_weekly_mileage}",
-    f"Mileage per Month: {mileage_per_month}",
-    sep='\n'
+render(
+  total_mileage, 
+  avg_weekly_mileage, 
+  total_activities, 
+  list(mileage_per_month), 
+  latest_activity
 )
