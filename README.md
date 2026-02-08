@@ -1,8 +1,8 @@
 # Strava Frame
 
-A Strava Dashboard displayed on a Raspberry PI connected to an E-Ink display
+A Strava Dashboard displayed on a Raspberry PI connected to a display
 
-![](./docs/dashboard_preview.png)
+![](./docs/dashboard.png)
 
 ## Setup
 
@@ -23,15 +23,7 @@ pyenv local 3.11.7
 pip install -r requirements.txt
 ```
 
-### 3. Install Waveshare e-Paper Driver
-
-```bash
-git clone https://github.com/waveshare/e-Paper.git
-cd e-Paper/RaspberryPi_JetsonNano/python
-sudo python3 setup.py install
-```
-
-### 4. Generate Strava API tokens
+### 3. Generate Strava API tokens
 
 1. Go to [Strava API Settings](https://www.strava.com/settings/api).
 2. Create a new application if you haven’t already.
@@ -53,6 +45,10 @@ STRAVA_REFRESH_TOKEN=your_refresh_token
 
 ## Usage
 
-```python
-python3 src/main.py
+```bash
+usage: main.py [-h] [-p]
+
+options:
+  -h, --help     show this help message and exit
+  -p, --preview  Show dashboard preview window
 ```
