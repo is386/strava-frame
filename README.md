@@ -2,6 +2,8 @@
 
 A Strava Dashboard displayed on a Raspberry PI connected to an E-Ink display
 
+![](./docs/dashboard_preview.png)
+
 ## Setup
 
 Follow these steps to prepare the project for development.
@@ -47,4 +49,10 @@ cp .env.example .env
 STRAVA_CLIENT_ID=your_client_id
 STRAVA_CLIENT_SECRET=your_client_secret
 STRAVA_REFRESH_TOKEN=your_refresh_token
+```
+
+## Usage
+
+```python
+python3 src/main.py
 ```
