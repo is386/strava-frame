@@ -37,6 +37,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
+Then fill in these values:
 ```
 STRAVA_CLIENT_ID=your_client_id
 STRAVA_CLIENT_SECRET=your_client_secret
