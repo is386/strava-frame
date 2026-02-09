@@ -1,10 +1,13 @@
 import os
 import numpy as np
+import logging
 from dotenv import load_dotenv
 from stravalib.client import Client
 from stravalib.model import SummaryActivity
 from datetime import datetime
 from typing import Tuple
+
+logging.getLogger("stravalib").setLevel(logging.ERROR)
 
 
 def meters_to_miles(meters: int) -> int:
@@ -28,6 +31,7 @@ def calculate_pace(meters: int, seconds: int) -> int:
 
 
 def get_yearly_strava_activities() -> list[SummaryActivity]:
+
     load_dotenv()
 
     STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
