@@ -1,6 +1,6 @@
 # Strava Frame
 
-A Strava Dashboard displayed on a Raspberry PI connected to a display
+A Strava Dashboard I use on my Raspberry Pi frame. This code is not Raspbery Pi specific and I have tested it on Linux Mint and Windows 11 w/ WSL2.
 
 ![](./docs/dashboard.png)
 
