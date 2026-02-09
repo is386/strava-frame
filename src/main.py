@@ -46,7 +46,8 @@ def fetch_and_parse_activities():
     try:
         activities = get_yearly_strava_activities()
         activities_cache = activities
-    except (RuntimeError, RequestException):
+    except (RuntimeError, RequestException) as e:
+        print(e)
         activities = activities_cache
     latest_activity = parse_latest_activity(activities)
     total_activities, total_mileage, avg_weekly_mileage, mileage_per_month = (

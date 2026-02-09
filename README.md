@@ -10,17 +10,14 @@ Follow these steps to prepare the project for development.
 
 ### 1. Install Python
 
-I recommend **Python 3.11**. Using [pyenv](https://github.com/pyenv/pyenv) is recommended:
-
-```bash
-pyenv install 3.11.7
-pyenv local 3.11.7
-```
+I recommend **Python 3.11**.
 
 ### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
+sudo apt update
+sudo apt install python3-tk
 ```
 
 ### 3. Generate Strava API tokens
@@ -45,7 +42,26 @@ STRAVA_CLIENT_SECRET=your_client_secret
 STRAVA_REFRESH_TOKEN=your_refresh_token
 ```
 
+### 4. Grant `read_all` permission
+
+1. Run the following to generate a new refresh token with `read_all` permission
+
+```bash
+chmod +x token.sh
+./token.sh
+```
+
+2. You will be prompted to open a link in your browser. After opening the link, click "Authorize"
+
+3. After clicking "Authorize", you will be redirected to an error page. Copy the value from the `code=` query parameter of the URL in the browser
+
+4. Paste the value into your terminal. Copy the newly generated refresh token and replace the value in your `.env` file.
+
 ## Usage
+
+```bash
+python3 src/main.py
+```
 
 ```bash
 usage: main.py [-h] [-b] [-f] [-i]
