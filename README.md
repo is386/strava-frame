@@ -38,6 +38,7 @@ cp .env.example .env
 ```
 
 Then fill in these values:
+
 ```
 STRAVA_CLIENT_ID=your_client_id
 STRAVA_CLIENT_SECRET=your_client_secret
@@ -47,11 +48,11 @@ STRAVA_REFRESH_TOKEN=your_refresh_token
 ## Usage
 
 ```bash
-usage: main.py [-h] [-p] [-b] [-i]
+usage: main.py [-h] [-b] [-f] [-i]
 
 options:
-  -h, --help     show this help message and exit
-  -p, --preview  Generate preview image
-  -b, --black    Use black accent color instead of orange
-  -i, --ink      Render dashboard for E-Ink displays
+  -h, --help        show this help message and exit
+  -b, --black       Use black accent color instead of orange
+  -f, --fullscreen  Toggle fullscreen mode
+  -i, --ink         Render dashboard for E-Ink displays
 ```
