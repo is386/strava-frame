@@ -85,7 +85,7 @@ def update_tk_dashboard():
     img = generate_image()
     tk_photo = ImageTk.PhotoImage(img)
     tk_label.config(image=tk_photo)
-    tk_root.after(60 * 1000, update_tk_dashboard)
+    tk_root.after(15 * 60 * 1000, update_tk_dashboard)
 
 
 def run_tk_dashboard():
