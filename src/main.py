@@ -15,7 +15,19 @@ def parse_args() -> argparse.Namespace:
         "-p",
         "--preview",
         action="store_true",
-        help="Show dashboard preview window",
+        help="Generate preview image",
+    )
+    parser.add_argument(
+        "-b",
+        "--black",
+        action="store_true",
+        help="Use black accent color instead of orange",
+    )
+    parser.add_argument(
+        "-i",
+        "--ink",
+        action="store_true",
+        help="Render dashboard for E-Ink displays",
     )
     return parser.parse_args()
 
@@ -45,7 +57,13 @@ while True:
         total_activities,
         list(mileage_per_month),
         latest_activity,
+        args.black,
     )
+
+    if args.ink:
+        img = img.convert("L")
+        THRESHOLD = 210
+        img = img.point(lambda p: 255 if p > THRESHOLD else 0, mode="1")
 
     if args.preview:
         img.save("preview.png")
