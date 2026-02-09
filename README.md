@@ -46,9 +46,11 @@ STRAVA_REFRESH_TOKEN=your_refresh_token
 ## Usage
 
 ```bash
-usage: main.py [-h] [-p]
+usage: main.py [-h] [-p] [-b] [-i]
 
 options:
   -h, --help     show this help message and exit
-  -p, --preview  Show dashboard preview window
+  -p, --preview  Generate preview image
+  -b, --black    Use black accent color instead of orange
+  -i, --ink      Render dashboard for E-Ink displays
 ```
