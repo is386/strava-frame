@@ -6,8 +6,6 @@ A Strava Dashboard I use on my Raspberry Pi frame. This code is not Raspbery Pi 
 
 ## Setup
 
-Follow these steps to prepare the project for development.
-
 ### 1. Install Python
 
 I recommend **Python 3.11**.
