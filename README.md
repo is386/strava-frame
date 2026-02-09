@@ -70,5 +70,4 @@ options:
   -h, --help        show this help message and exit
   -b, --black       Use black accent color instead of orange
   -f, --fullscreen  Toggle fullscreen mode
-  -i, --ink         Render dashboard for E-Ink displays
 ```

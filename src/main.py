@@ -29,12 +29,6 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Toggle fullscreen mode",
     )
-    parser.add_argument(
-        "-i",
-        "--ink",
-        action="store_true",
-        help="Render dashboard for E-Ink displays",
-    )
     return parser.parse_args()
 
 
@@ -81,15 +75,15 @@ def generate_image():
     return img
 
 
-def update_tk_dashboard():
+def update_dashboard():
     global tk_root, tk_label, tk_photo
     img = generate_image()
     tk_photo = ImageTk.PhotoImage(img)
     tk_label.config(image=tk_photo)
-    tk_root.after(15 * 60 * 1000, update_tk_dashboard)
+    tk_root.after(15 * 60 * 1000, update_dashboard)
 
 
-def run_tk_dashboard():
+def run_dashboard():
     global tk_root, tk_label
     tk_root = tk.Tk()
     tk_root.title("")
@@ -99,19 +93,8 @@ def run_tk_dashboard():
     tk_root.bind("<Escape>", lambda e: tk_root.destroy())
     tk_label = tk.Label(tk_root)
     tk_label.pack(expand=True)
-    update_tk_dashboard()
+    update_dashboard()
     tk_root.mainloop()
 
 
-def run_ink_dashboard():
-    img = generate_image()
-    img = img.convert("L")
-    THRESHOLD = 210
-    img = img.point(lambda p: 255 if p > THRESHOLD else 0, mode="1")
-    print("E-Ink dashboard updated (todo).")
-
-
-if args.ink:
-    run_ink_dashboard()
-else:
-    run_tk_dashboard()
+run_dashboard()
