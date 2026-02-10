@@ -67,7 +67,7 @@ options:
   -b, --black       use black accent color instead of orange
   -f, --fullscreen  run in fullscreen mode
 
-Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit
+Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit | r = refresh
 ```
 
 ## Setting Up Autostart on Raspbian (Labwc)
