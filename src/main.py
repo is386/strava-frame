@@ -16,23 +16,23 @@ tk_photo = None
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Strava Frame",
+        epilog="Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit",
+    )
     parser.add_argument(
         "-b",
         "--black",
         action="store_true",
-        help="Use black accent color instead of orange",
+        help="use black accent color instead of orange",
     )
     parser.add_argument(
         "-f",
         "--fullscreen",
         action="store_true",
-        help="Toggle fullscreen mode",
+        help="run in fullscreen mode",
     )
     return parser.parse_args()
-
-
-args = parse_args()
 
 
 def fetch_and_parse_activities():
@@ -83,6 +83,12 @@ def update_dashboard():
     tk_root.after(15 * 60 * 1000, update_dashboard)
 
 
+def toggle_fullscreen(event=None):
+    global tk_root
+    current = tk_root.attributes("-fullscreen")
+    tk_root.attributes("-fullscreen", not current)
+
+
 def run_dashboard():
     global tk_root, tk_label
     tk_root = tk.Tk()
@@ -90,11 +96,15 @@ def run_dashboard():
     tk_root.resizable(False, False)
     tk_root.attributes("-fullscreen", args.fullscreen)
     tk_root.config(cursor="none")
+
     tk_root.bind("<Escape>", lambda e: tk_root.destroy())
+    tk_root.bind("<F11>", toggle_fullscreen)  # F11 to toggle fullscreen
+
     tk_label = tk.Label(tk_root)
     tk_label.pack(expand=True)
     update_dashboard()
     tk_root.mainloop()
 
 
+args = parse_args()
 run_dashboard()

@@ -58,14 +58,55 @@ chmod +x token.sh
 ## Usage
 
 ```bash
-python3 src/main.py
-```
+usage: main.py [-h] [-b] [-f]
 
-```bash
-usage: main.py [-h] [-b] [-f] [-i]
+Strava Frame
 
 options:
   -h, --help        show this help message and exit
-  -b, --black       Use black accent color instead of orange
-  -f, --fullscreen  Toggle fullscreen mode
+  -b, --black       use black accent color instead of orange
+  -f, --fullscreen  run in fullscreen mode
+
+Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit
 ```
+
+## Setting Up Autostart on Raspbian (Labwc)
+
+### 1. Create the Labwc autostart directory (if it doesn't exist)
+
+```bash
+mkdir -p ~/.config/labwc
+```
+
+### 2. Create the autostart file
+
+```bash
+touch ~/.config/labwc/autostart
+```
+
+Add this line to the file (replace `/home/pi/path/to/your/project` with your actual project path):
+
+```bash
+sleep 5 && python3 /home/{username}/path/to/your/project/src/main.py --fullscreen &
+```
+
+**NOTE:** The `sleep` is needed otherwise the dashboard does not start in fullscreen
+
+### 3. Make the autostart file executable
+
+```bash
+chmod +x ~/.config/labwc/autostart
+```
+
+### 6. Test by rebooting
+
+```bash
+sudo reboot
+```
+
+### 7. Troubleshooting
+
+If the dashboard doesn't start in fullscreen:
+
+- Press **F11** to toggle fullscreen mode
+- If it doesn't start at all, increase the sleep delay
