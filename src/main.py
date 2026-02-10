@@ -7,18 +7,20 @@ from data import (
     parse_yearly_data,
 )
 import tkinter as tk
-from PIL import ImageTk
+from PIL import ImageTk, Image
 
 activities_cache = []
 tk_root = None
 tk_label = None
 tk_photo = None
+is_first_update = True
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Strava Frame",
-        epilog="Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit",
+        epilog="Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit"
+        + " | r = refresh",
     )
     parser.add_argument(
         "-b",
@@ -78,9 +80,29 @@ def generate_image():
 def update_dashboard():
     global tk_root, tk_label, tk_photo
     img = generate_image()
+
+    window_width = tk_root.winfo_width()
+    window_height = tk_root.winfo_height()
+
+    if window_width > 1 and window_height > 1:
+        img_width, img_height = img.size
+        scale_w = window_width / img_width
+        scale_h = window_height / img_height
+        scale = min(scale_w, scale_h)
+
+        new_width = int(img_width * scale)
+        new_height = int(img_height * scale)
+        img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
     tk_photo = ImageTk.PhotoImage(img)
     tk_label.config(image=tk_photo)
-    tk_root.after(15 * 60 * 1000, update_dashboard)
+
+    global is_first_update
+    if is_first_update:
+        tk_root.after(5 * 1000, update_dashboard)
+        is_first_update = False
+    else:
+        tk_root.after(15 * 60 * 1000, update_dashboard)
 
 
 def toggle_fullscreen(event=None):
@@ -98,7 +120,8 @@ def run_dashboard():
     tk_root.config(cursor="none")
 
     tk_root.bind("<Escape>", lambda e: tk_root.destroy())
-    tk_root.bind("<F11>", toggle_fullscreen)  # F11 to toggle fullscreen
+    tk_root.bind("<F11>", toggle_fullscreen)
+    tk_root.bind("<r>", lambda e: update_dashboard())
 
     tk_label = tk.Label(tk_root)
     tk_label.pack(expand=True)
