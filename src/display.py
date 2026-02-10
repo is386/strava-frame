@@ -1,18 +1,31 @@
+import os
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 from PIL.Image import Image as PILImage
 from typing import List, Dict
 
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(SCRIPT_DIR, "..", "assets")
+
 # =========================
 # Fonts and colors
 # =========================
-HEADER_FONT = ImageFont.truetype("assets/segoeuib.ttf", 28)
-YEAR_METRIC_VALUE_FONT = ImageFont.truetype("assets/segoeui.ttf", 48)
-LABEL_FONT = ImageFont.truetype("assets/segoeui.ttf", 16)
-LATEST_TITLE_FONT = ImageFont.truetype("assets/segoeuib.ttf", 22)
-METRIC_VALUE_FONT = ImageFont.truetype("assets/segoeui.ttf", 32)
-DATE_FONT = ImageFont.truetype("assets/segoeui.ttf", 16)
-LEFT_CARD_TITLE_FONT = ImageFont.truetype("assets/segoeuib.ttf", 22)
+HEADER_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeuib.ttf"), 28)
+YEAR_METRIC_VALUE_FONT = ImageFont.truetype(
+    os.path.join(ASSETS_DIR, "segoeui.ttf"), 48
+)
+LABEL_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeui.ttf"), 16)
+LATEST_TITLE_FONT = ImageFont.truetype(
+    os.path.join(ASSETS_DIR, "segoeuib.ttf"), 22
+)
+METRIC_VALUE_FONT = ImageFont.truetype(
+    os.path.join(ASSETS_DIR, "segoeui.ttf"), 32
+)
+DATE_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeui.ttf"), 16)
+LEFT_CARD_TITLE_FONT = ImageFont.truetype(
+    os.path.join(ASSETS_DIR, "segoeuib.ttf"), 22
+)
 
 STRAVA_ORANGE = "#FC4C02"
 BG_COLOR = "#FAFAFA"

@@ -2,4 +2,3 @@ requests==2.32.5
 python-dotenv==1.2.1
 stravalib==2.4
 pillow==12.1.0
-numpy==2.4.2
