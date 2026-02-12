@@ -117,24 +117,36 @@ def update_dashboard():
 def update_button_position(event=None):
     global tk_root, refresh_btn
     
+    window_width = tk_root.winfo_width()
     window_height = tk_root.winfo_height()
-    if window_height <= 1:
+    
+    if window_width <= 1 or window_height <= 1:
         tk_root.after(100, update_button_position)
         return
-        
-    scale = window_height / 480
+    
+    img_width, img_height = 800, 480
+    
+    scale_w = window_width / img_width
+    scale_h = window_height / img_height
+    scale = min(scale_w, scale_h)  # Same logic as your image scaling
+    
     button_size = int(40 * scale)
     font_size = max(12, int(20 * scale))
     
     margin = int(10 * scale)
     
+    scaled_img_width = int(img_width * scale)
+    scaled_img_height = int(img_height * scale)
+    
+    x_offset = (window_width - scaled_img_width) // 2
+    y_offset = (window_height - scaled_img_height) // 2
+    
     refresh_btn.config(font=("Arial", font_size))
     
-    refresh_btn.place(x=tk_root.winfo_width() - button_size - margin, 
-                     y=margin, 
+    refresh_btn.place(x=x_offset + scaled_img_width - button_size - margin, 
+                     y=y_offset + margin, 
                      width=button_size, 
                      height=button_size)
-
 
 def toggle_fullscreen(event=None):
     global tk_root
