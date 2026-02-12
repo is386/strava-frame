@@ -1,20 +1,24 @@
 import argparse
+import tkinter as tk
 from requests.exceptions import RequestException
-from display import render
+from display import render, render_sleep_mode
 from data import (
     get_yearly_strava_activities,
     parse_latest_activity,
     parse_yearly_data,
 )
-import tkinter as tk
 from PIL import ImageTk, Image
+from datetime import datetime
+
+SLEEP_MODE_START = 21
+SLEEP_MODE_END = 6
+REFRESH_TIME = 15 * 60 * 1000
 
 activities_cache = []
 tk_root = None
 tk_label = None
 tk_photo = None
 is_first_update = True
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -78,8 +82,14 @@ def generate_image():
 
 
 def update_dashboard():
-    global tk_root, tk_label, tk_photo
-    img = generate_image()
+    global tk_root, tk_label, tk_photo, is_first_update
+
+    now = datetime.now()
+
+    if not is_first_update and (now.hour > SLEEP_MODE_START or now.hour < SLEEP_MODE_END):
+        img = render_sleep_mode()
+    else:    
+        img = generate_image()
 
     window_width = tk_root.winfo_width()
     window_height = tk_root.winfo_height()
@@ -97,12 +107,11 @@ def update_dashboard():
     tk_photo = ImageTk.PhotoImage(img)
     tk_label.config(image=tk_photo)
 
-    global is_first_update
     if is_first_update:
-        tk_root.after(5 * 1000, update_dashboard)
         is_first_update = False
+        tk_root.after(5000, update_dashboard)
     else:
-        tk_root.after(15 * 60 * 1000, update_dashboard)
+        tk_root.after(REFRESH_TIME, update_dashboard)
 
 
 def toggle_fullscreen(event=None):
