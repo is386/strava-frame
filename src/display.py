@@ -408,3 +408,6 @@ def render(
     )
 
     return img
+
+def render_sleep_mode():
+    return Image.new('RGB', (800, 480), color='black')
