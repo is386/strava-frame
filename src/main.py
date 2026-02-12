@@ -107,6 +107,7 @@ def update_dashboard():
         img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
     tk_photo = ImageTk.PhotoImage(img)
+    tk_label.config(image=tk_photo)
     tk_root.after(REFRESH_TIME, update_dashboard)
 
 
