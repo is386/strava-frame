@@ -115,7 +115,7 @@ def toggle_fullscreen(event=None):
     global tk_root
     current = tk_root.attributes("-fullscreen")
     tk_root.attributes("-fullscreen", not current)
-
+    update_dashboard()
 
 def update_button_position(event=None):
     global tk_root, refresh_btn, fullscreen_btn
