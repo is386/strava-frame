@@ -18,7 +18,6 @@ activities_cache = []
 tk_root = None
 tk_label = None
 tk_photo = None
-is_first_update = True
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -82,11 +81,11 @@ def generate_image():
 
 
 def update_dashboard():
-    global tk_root, tk_label, tk_photo, is_first_update
+    global tk_root, tk_label, tk_photo
 
     now = datetime.now()
 
-    if not is_first_update and (now.hour > SLEEP_MODE_START or now.hour < SLEEP_MODE_END):
+    if now.hour >= SLEEP_MODE_START or now.hour < SLEEP_MODE_END:
         img = render_sleep_mode()
     else:    
         img = generate_image()
@@ -107,12 +106,7 @@ def update_dashboard():
     tk_photo = ImageTk.PhotoImage(img)
     tk_label.config(image=tk_photo)
 
-    if is_first_update:
-        is_first_update = False
-        tk_root.after(5000, update_dashboard)
-    else:
-        tk_root.after(REFRESH_TIME, update_dashboard)
-
+    tk_root.after(REFRESH_TIME, update_dashboard)
 
 def update_button_position(event=None):
     global tk_root, refresh_btn
@@ -158,6 +152,9 @@ def run_dashboard():
     global tk_root, tk_label, refresh_btn
     tk_root = tk.Tk()
     tk_root.title("")
+    
+    tk_root.geometry("800x480")
+    
     tk_root.resizable(False, False)
     tk_root.attributes("-fullscreen", args.fullscreen)
     tk_root.config(cursor="none")
@@ -179,12 +176,10 @@ def run_dashboard():
                         highlightthickness=0)
     
     tk_root.bind("<Configure>", update_button_position)
-    
-    tk_root.after(100, update_button_position)
-    
+    tk_root.update_idletasks()
+    update_button_position()
     update_dashboard()
     tk_root.mainloop()
-
-
+    
 args = parse_args()
 run_dashboard()
