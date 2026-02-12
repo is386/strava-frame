@@ -18,6 +18,9 @@ activities_cache = []
 tk_root = None
 tk_label = None
 tk_photo = None
+refresh_btn = None
+fullscreen_btn = None
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -104,12 +107,17 @@ def update_dashboard():
         img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
     tk_photo = ImageTk.PhotoImage(img)
-    tk_label.config(image=tk_photo)
-
     tk_root.after(REFRESH_TIME, update_dashboard)
 
+
+def toggle_fullscreen(event=None):
+    global tk_root
+    current = tk_root.attributes("-fullscreen")
+    tk_root.attributes("-fullscreen", not current)
+
+
 def update_button_position(event=None):
-    global tk_root, refresh_btn
+    global tk_root, refresh_btn, fullscreen_btn
     
     window_width = tk_root.winfo_width()
     window_height = tk_root.winfo_height()
@@ -136,20 +144,21 @@ def update_button_position(event=None):
     y_offset = (window_height - scaled_img_height) // 2
     
     refresh_btn.config(font=("Arial", font_size))
+    fullscreen_btn.config(font=("Arial", font_size))
     
     refresh_btn.place(x=x_offset + scaled_img_width - button_size - margin, 
                      y=y_offset + margin, 
                      width=button_size, 
                      height=button_size)
-
-def toggle_fullscreen(event=None):
-    global tk_root
-    current = tk_root.attributes("-fullscreen")
-    tk_root.attributes("-fullscreen", not current)
+    
+    fullscreen_btn.place(x=x_offset + margin, 
+                        y=y_offset + margin, 
+                        width=button_size, 
+                        height=button_size)
 
 
 def run_dashboard():
-    global tk_root, tk_label, refresh_btn
+    global tk_root, tk_label, refresh_btn, fullscreen_btn
     tk_root = tk.Tk()
     tk_root.title("")
     
@@ -170,16 +179,26 @@ def run_dashboard():
     tk_label.pack(expand=True)
     
     btn_color = 'black' if args.black else STRAVA_ORANGE
+    
     refresh_btn = tk.Button(frame, text="⟳", command=update_dashboard,
                         font=("Arial", 20), bg=btn_color, fg='white',
                         borderwidth=0, relief='flat', padx=0, pady=0,
                         highlightthickness=0)
     
+    fullscreen_btn = tk.Button(frame, text="⤢", command=toggle_fullscreen,
+                        font=("Arial", 20), bg=btn_color, fg='white',
+                        borderwidth=0, relief='flat', padx=0, pady=0,
+                        highlightthickness=0)
+    
     tk_root.bind("<Configure>", update_button_position)
+    
     tk_root.update_idletasks()
+    
     update_button_position()
+    
     update_dashboard()
     tk_root.mainloop()
-    
+
+
 args = parse_args()
 run_dashboard()
