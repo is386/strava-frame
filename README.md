@@ -72,6 +72,29 @@ options:
 Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit | r = refresh
 ```
 
+## Frame Setup
+
+### 1. Buy the Hardware
+
+This is the hardware I used for this project, and it was all plug-and-play except the touch screendrivers on the display:
+
+- Raspberry Pi 2B (newer models should be compatible with the rest of the hardware)
+- [USB WiFi Adapter for Raspberry Pi](https://www.amazon.com/dp/B06Y2HKT75?ref=ppx_yo2ov_dt_b_fed_asin_title)
+- [ELECROW 5-Inch Resistive Touch Screen TFT LCD Display](https://www.amazon.com/dp/B013JECYF2?ref=ppx_yo2ov_dt_b_fed_asin_title)
+
+### 2. Set Up the Display Drivers
+
+```bash
+git clone https://github.com/goodtft/LCD-show.git
+chmod -R 755 LCD-show
+cd LCD-show
+sudo ./LCD5-show
+```
+
+### 3. Set Up an Easy Way to Start the Dashboard
+
+Either follow the steps below to make an autoscript or just have a bash script on the desktop that starts the code. Personally, I have both and its convenient with the touchscreen
+
 ## Setting Up Autostart on Raspbian (Labwc)
 
 ### 1. Create the Labwc autostart directory (if it doesn't exist)
@@ -89,10 +112,10 @@ touch ~/.config/labwc/autostart
 Add this line to the file (replace `/home/pi/path/to/your/project` with your actual project path):
 
 ```bash
-sleep 5 && python3 /home/{username}/path/to/your/project/src/main.py --fullscreen &
+sleep 60 && python3 /home/{username}/path/to/your/project/src/main.py --fullscreen &
 ```
 
-**NOTE:** The `sleep` is needed otherwise the dashboard does not start in fullscreen
+**NOTE:** The `sleep` is needed otherwise the dashboard does not start in fullscreen and does not connect to wifi
 
 ### 3. Make the autostart file executable
 
