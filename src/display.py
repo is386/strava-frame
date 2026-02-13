@@ -12,26 +12,36 @@ ASSETS_DIR = os.path.join(SCRIPT_DIR, "..", "assets")
 # Fonts and colors
 # =========================
 HEADER_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeuib.ttf"), 28)
-YEAR_METRIC_VALUE_FONT = ImageFont.truetype(
-    os.path.join(ASSETS_DIR, "segoeui.ttf"), 48
-)
+YEAR_METRIC_VALUE_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeui.ttf"), 48)
 LABEL_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeui.ttf"), 16)
-LATEST_TITLE_FONT = ImageFont.truetype(
-    os.path.join(ASSETS_DIR, "segoeuib.ttf"), 22
-)
-METRIC_VALUE_FONT = ImageFont.truetype(
-    os.path.join(ASSETS_DIR, "segoeui.ttf"), 32
-)
+LATEST_TITLE_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeuib.ttf"), 22)
+METRIC_VALUE_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeui.ttf"), 32)
 DATE_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeui.ttf"), 16)
-LEFT_CARD_TITLE_FONT = ImageFont.truetype(
-    os.path.join(ASSETS_DIR, "segoeuib.ttf"), 22
-)
+LEFT_CARD_TITLE_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeuib.ttf"), 22)
 
-STRAVA_ORANGE = "#FC4C02"
-BG_COLOR = "#FAFAFA"
-TEXT_COLOR = "#000000"
-LABEL_COLOR = "#888888"
-CARD_COLOR = "#FFFFFF"
+# Light mode colors
+LIGHT_ACCENT_COLOR = "#FC4C02"
+LIGHT_BG_COLOR = "#FAFAFA"
+LIGHT_TEXT_COLOR = "#000000"
+LIGHT_LABEL_COLOR = "#888888"
+LIGHT_CARD_COLOR = "#FFFFFF"
+LIGHT_BORDER_COLOR = "#E0E0E0"
+
+# Dark mode colors
+DARK_ACCENT_COLOR = "#fa8b5c"
+DARK_BG_COLOR = "#1A1A1A"
+DARK_TEXT_COLOR = "#E0E0E0"
+DARK_LABEL_COLOR = "#999999"
+DARK_CARD_COLOR = "#2b2b2b"
+DARK_BORDER_COLOR = "#404040"
+
+# Active colors (will be set based on mode)
+ACCENT_COLOR = LIGHT_ACCENT_COLOR
+BG_COLOR = LIGHT_BG_COLOR
+TEXT_COLOR = LIGHT_TEXT_COLOR
+LABEL_COLOR = LIGHT_LABEL_COLOR
+CARD_COLOR = LIGHT_CARD_COLOR
+BORDER_COLOR = LIGHT_BORDER_COLOR
 
 # =========================
 # Layout constants
@@ -47,11 +57,12 @@ CARD_SPACING = 15
 # =========================
 # Card helper
 # =========================
-def draw_card(draw: ImageDraw.Draw, x0, y0, x1, y1, radius=8, fill=CARD_COLOR):
+def draw_card(draw: ImageDraw.Draw, x0, y0, x1, y1, radius=8, fill=None):
+    if fill is None:
+        fill = CARD_COLOR
     draw.rounded_rectangle([x0, y0, x1, y1], radius=radius, fill=fill)
-    border_color = "#E0E0E0"
     draw.rounded_rectangle(
-        [x0, y0, x1, y1], radius=radius, outline=border_color, width=1
+        [x0, y0, x1, y1], radius=radius, outline=BORDER_COLOR, width=1
     )
 
 
@@ -59,7 +70,7 @@ def draw_card(draw: ImageDraw.Draw, x0, y0, x1, y1, radius=8, fill=CARD_COLOR):
 # Header
 # =========================
 def draw_header(draw: ImageDraw.Draw, width: int, header_height: int):
-    draw.rectangle([(0, 0), (width, header_height)], fill=STRAVA_ORANGE)
+    draw.rectangle([(0, 0), (width, header_height)], fill=ACCENT_COLOR)
     title = "Strava Dashboard"
     bbox = draw.textbbox((0, 0), title, font=HEADER_FONT)
     text_w = bbox[2] - bbox[0]
@@ -80,9 +91,7 @@ def draw_metric(
     num_w = num_bbox[2] - num_bbox[0]
     num_h = num_bbox[3] - num_bbox[1]
     num_x = center_x - num_w // 2
-    draw.text(
-        (num_x, y), num_text, font=YEAR_METRIC_VALUE_FONT, fill=TEXT_COLOR
-    )
+    draw.text((num_x, y), num_text, font=YEAR_METRIC_VALUE_FONT, fill=TEXT_COLOR)
 
     label_bbox = draw.textbbox((0, 0), label, font=LABEL_FONT)
     label_w = label_bbox[2] - label_bbox[0]
@@ -173,7 +182,7 @@ def draw_left_column(
                 (card_x0 + INNER_PADDING + 20, y),
                 (card_x1 - INNER_PADDING - 20, y),
             ],
-            fill="#E0E0E0",
+            fill=BORDER_COLOR,
             width=1,
         )
 
@@ -255,7 +264,7 @@ def draw_monthly_graph(
         bar_bottom = bars_bottom
         bar_top = bar_bottom - bar_height
         draw.rounded_rectangle(
-            [x0, bar_top, x1, bar_bottom], radius=2, fill=STRAVA_ORANGE
+            [x0, bar_top, x1, bar_bottom], radius=2, fill=ACCENT_COLOR
         )
 
         # Month label
@@ -263,9 +272,7 @@ def draw_monthly_graph(
         month_w = month_bbox[2] - month_bbox[0]
         month_x = x0 + (bar_width - month_w) // 2
         month_y = bar_bottom + 4
-        draw.text(
-            (month_x, month_y), months[i], font=LABEL_FONT, fill=LABEL_COLOR
-        )
+        draw.text((month_x, month_y), months[i], font=LABEL_FONT, fill=LABEL_COLOR)
 
     return card_y1
 
@@ -303,11 +310,11 @@ def draw_latest_activity(
     title_bbox = draw.textbbox((0, 0), title_text, font=LATEST_TITLE_FONT)
     date_text = latest_activity.get("date", "")
     date_y = inner_y0 + (title_bbox[3] - title_bbox[1]) + 6
-    draw.text((inner_x0, date_y), date_text, font=DATE_FONT, fill=LABEL_COLOR)
+    draw.text((inner_x0, date_y + 5), date_text, font=DATE_FONT, fill=LABEL_COLOR)
 
     # Metrics (Distance, Time, Pace)
     metrics = [
-        ("Distance", f"{latest_activity.get('miles',0):.2f} mi"),
+        ("Distance", f"{latest_activity.get('miles', 0):.2f} mi"),
         ("Time", latest_activity.get("time", "0:00")),
         ("Pace", latest_activity.get("pace", "0:00")),
     ]
@@ -321,32 +328,24 @@ def draw_latest_activity(
     block_widths, x_positions = [], []
     current_x = inner_x0
     for label, value in metrics:
-        value_text = (
-            f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
-        )
+        value_text = f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
         value_bbox = draw.textbbox((0, 0), value_text, font=METRIC_VALUE_FONT)
         label_bbox = draw.textbbox((0, 0), label, font=LABEL_FONT)
-        block_width = max(
-            value_bbox[2] - value_bbox[0], label_bbox[2] - label_bbox[0]
-        )
+        block_width = max(value_bbox[2] - value_bbox[0], label_bbox[2] - label_bbox[0])
         block_widths.append(block_width)
         x_positions.append(current_x)
         current_x += block_width + spacing_between_blocks
 
     for i, (label, value) in enumerate(metrics):
         x = x_positions[i]
-        value_text = (
-            f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
-        )
+        value_text = f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
         value_bbox = draw.textbbox((0, 0), value_text, font=METRIC_VALUE_FONT)
         label_bbox = draw.textbbox((0, 0), label, font=LABEL_FONT)
         value_h = value_bbox[3] - value_bbox[1]
         label_h = label_bbox[3] - label_bbox[1]
         block_height = value_h + vertical_padding + label_h
         y_top = panel_top + (panel_height - block_height) // 2
-        draw.text(
-            (x, y_top), value_text, font=METRIC_VALUE_FONT, fill=TEXT_COLOR
-        )
+        draw.text((x, y_top), value_text, font=METRIC_VALUE_FONT, fill=TEXT_COLOR)
         draw.text(
             (x + 1, y_top + value_h + vertical_padding + 8),
             label,
@@ -363,7 +362,7 @@ def draw_latest_activity(
         )
         draw.line(
             [(x0, panel_top + 30), (x0, panel_bottom - 5)],
-            fill="#E0E0E0",
+            fill=BORDER_COLOR,
             width=1,
         )
 
@@ -377,15 +376,27 @@ def render(
     activities: int,
     mileage_per_month: List[int],
     latest_activity: Dict,
-    black=False,
+    color="",
+    dark_mode=False,
 ) -> PILImage:
 
     WIDTH, HEIGHT = 800, 480
     HEADER_HEIGHT = 60
 
-    if black:
-        global STRAVA_ORANGE
-        STRAVA_ORANGE = TEXT_COLOR
+    # Set color scheme based on dark_mode
+    global ACCENT_COLOR, BG_COLOR, TEXT_COLOR, LABEL_COLOR, CARD_COLOR, BORDER_COLOR
+
+    if dark_mode:
+        ACCENT_COLOR = DARK_ACCENT_COLOR
+        BG_COLOR = DARK_BG_COLOR
+        TEXT_COLOR = DARK_TEXT_COLOR
+        LABEL_COLOR = DARK_LABEL_COLOR
+        CARD_COLOR = DARK_CARD_COLOR
+        BORDER_COLOR = DARK_BORDER_COLOR
+
+    # Override accent color if custom color provided
+    if color is not None:
+        ACCENT_COLOR = color
 
     img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
     draw = ImageDraw.Draw(img)
@@ -409,5 +420,6 @@ def render(
 
     return img
 
+
 def render_sleep_mode():
-    return Image.new('RGB', (800, 480), color='black')
+    return Image.new("RGB", (800, 480), color="black")
