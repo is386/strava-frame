@@ -2,7 +2,7 @@
 
 A Strava Dashboard I use on my Raspberry Pi frame. This code is not Raspbery Pi specific and I have tested it on Linux Mint and Windows 11 w/ WSL2.
 
-![](./docs/dashboard.png)
+<img src="docs/dashboard.png" width="400"> <img src="docs/dashboard_dark.png" width="400">
 
 ## Setup
 
@@ -58,14 +58,16 @@ chmod +x token.sh
 ## Usage
 
 ```bash
-usage: main.py [-h] [-b] [-f]
+usage: main.py [-h] [-c COLOR] [-f] [-d]
 
 Strava Frame
 
 options:
-  -h, --help        show this help message and exit
-  -b, --black       use black accent color instead of orange
-  -f, --fullscreen  run in fullscreen mode
+  -h, --help            show this help message and exit
+  -c COLOR, --color COLOR
+                        set accent color (must be hexadecimal color value ex: FC4C02)
+  -f, --fullscreen      run in fullscreen mode
+  -d, --darkmode        use dark mode
 
 Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit | r = refresh
 ```
@@ -108,5 +110,5 @@ sudo reboot
 
 If the dashboard doesn't start in fullscreen:
 
-- Press **F11** to toggle fullscreen mode
+- Press **F11** or the fullscreen button to toggle fullscreen mode
 - If it doesn't start at all, increase the sleep delay

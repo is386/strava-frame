@@ -1,7 +1,15 @@
 import argparse
 import tkinter as tk
+import re
 from requests.exceptions import RequestException
-from display import render, render_sleep_mode, STRAVA_ORANGE
+from display import (
+    render,
+    render_sleep_mode,
+    LIGHT_ACCENT_COLOR,
+    DARK_ACCENT_COLOR,
+    DARK_TEXT_COLOR,
+    LIGHT_TEXT_COLOR,
+)
 from data import (
     get_yearly_strava_activities,
     parse_latest_activity,
@@ -10,7 +18,7 @@ from data import (
 from PIL import ImageTk, Image
 from datetime import datetime
 
-SLEEP_MODE_START = 21
+SLEEP_MODE_START = 22
 SLEEP_MODE_END = 6
 REFRESH_TIME = 15 * 60 * 1000
 
@@ -22,6 +30,15 @@ refresh_btn = None
 fullscreen_btn = None
 
 
+def hex_color(value):
+    value = value.lstrip("#")
+
+    if not re.match(r"^[0-9A-Fa-f]{6}$|^[0-9A-Fa-f]{3}$", value):
+        raise argparse.ArgumentTypeError(f"{value} is not a valid hex color")
+
+    return f"#{value}"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Strava Frame",
@@ -29,16 +46,22 @@ def parse_args() -> argparse.Namespace:
         + " | r = refresh",
     )
     parser.add_argument(
-        "-b",
-        "--black",
-        action="store_true",
-        help="use black accent color instead of orange",
+        "-c",
+        "--color",
+        type=hex_color,
+        help="set accent color (must be hexadecimal color value ex: FC4C02)",
     )
     parser.add_argument(
         "-f",
         "--fullscreen",
         action="store_true",
         help="run in fullscreen mode",
+    )
+    parser.add_argument(
+        "-d",
+        "--darkmode",
+        action="store_true",
+        help="use dark mode",
     )
     return parser.parse_args()
 
@@ -78,9 +101,62 @@ def generate_image():
         total_activities,
         mileage_per_month,
         latest_activity,
-        args.black,
+        args.color,
+        args.darkmode,
     )
     return img
+
+
+def toggle_fullscreen(event=None):
+    global tk_root
+    current = tk_root.attributes("-fullscreen")
+    tk_root.attributes("-fullscreen", not current)
+    tk_root.after(5, update_dashboard)
+
+
+def update_button_position(event=None):
+    global tk_root, refresh_btn, fullscreen_btn
+
+    window_width = tk_root.winfo_width()
+    window_height = tk_root.winfo_height()
+
+    if window_width <= 1 or window_height <= 1:
+        tk_root.after(100, update_button_position)
+        return
+
+    img_width, img_height = 800, 480
+
+    scale_w = window_width / img_width
+    scale_h = window_height / img_height
+    scale = min(scale_w, scale_h)
+
+    button_size = int(40 * scale)
+    font_size = max(12, int(20 * scale))
+
+    margin = int(10 * scale)
+
+    scaled_img_width = int(img_width * scale)
+    scaled_img_height = int(img_height * scale)
+
+    x_offset = (window_width - scaled_img_width) // 2
+    y_offset = (window_height - scaled_img_height) // 2
+
+    refresh_btn.config(font=("Arial", font_size))
+    fullscreen_btn.config(font=("Arial", font_size))
+
+    refresh_btn.place(
+        x=x_offset + scaled_img_width - button_size - margin,
+        y=y_offset + margin,
+        width=button_size,
+        height=button_size,
+    )
+
+    fullscreen_btn.place(
+        x=x_offset + margin,
+        y=y_offset + margin,
+        width=button_size,
+        height=button_size,
+    )
 
 
 def update_dashboard():
@@ -90,7 +166,7 @@ def update_dashboard():
 
     if now.hour >= SLEEP_MODE_START or now.hour < SLEEP_MODE_END:
         img = render_sleep_mode()
-    else:    
+    else:
         img = generate_image()
 
     window_width = tk_root.winfo_width()
@@ -111,60 +187,13 @@ def update_dashboard():
     tk_root.after(REFRESH_TIME, update_dashboard)
 
 
-def toggle_fullscreen(event=None):
-    global tk_root
-    current = tk_root.attributes("-fullscreen")
-    tk_root.attributes("-fullscreen", not current)
-    tk_root.after(500, update_dashboard)
-
-def update_button_position(event=None):
-    global tk_root, refresh_btn, fullscreen_btn
-    
-    window_width = tk_root.winfo_width()
-    window_height = tk_root.winfo_height()
-    
-    if window_width <= 1 or window_height <= 1:
-        tk_root.after(100, update_button_position)
-        return
-    
-    img_width, img_height = 800, 480
-    
-    scale_w = window_width / img_width
-    scale_h = window_height / img_height
-    scale = min(scale_w, scale_h)  # Same logic as your image scaling
-    
-    button_size = int(40 * scale)
-    font_size = max(12, int(20 * scale))
-    
-    margin = int(10 * scale)
-    
-    scaled_img_width = int(img_width * scale)
-    scaled_img_height = int(img_height * scale)
-    
-    x_offset = (window_width - scaled_img_width) // 2
-    y_offset = (window_height - scaled_img_height) // 2
-    
-    refresh_btn.config(font=("Arial", font_size))
-    fullscreen_btn.config(font=("Arial", font_size))
-    
-    refresh_btn.place(x=x_offset + scaled_img_width - button_size - margin, 
-                     y=y_offset + margin, 
-                     width=button_size, 
-                     height=button_size)
-    
-    fullscreen_btn.place(x=x_offset + margin, 
-                        y=y_offset + margin, 
-                        width=button_size, 
-                        height=button_size)
-
-
 def run_dashboard():
     global tk_root, tk_label, refresh_btn, fullscreen_btn
     tk_root = tk.Tk()
     tk_root.title("")
-    
+
     tk_root.geometry("800x480")
-    
+
     tk_root.resizable(False, False)
     tk_root.attributes("-fullscreen", args.fullscreen)
     tk_root.config(cursor="none")
@@ -174,29 +203,51 @@ def run_dashboard():
     tk_root.bind("<r>", lambda e: update_dashboard())
 
     frame = tk.Frame(tk_root)
-    frame.pack(expand=True, fill='both')
-    
+    frame.pack(expand=True, fill="both")
+
     tk_label = tk.Label(frame)
     tk_label.pack(expand=True)
-    
-    btn_color = 'black' if args.black else STRAVA_ORANGE
-    
-    refresh_btn = tk.Button(frame, text="⟳", command=update_dashboard,
-                        font=("Arial", 20), bg=btn_color, fg='white',
-                        borderwidth=0, relief='flat', padx=0, pady=0,
-                        highlightthickness=0)
-    
-    fullscreen_btn = tk.Button(frame, text="⤢", command=toggle_fullscreen,
-                        font=("Arial", 20), bg=btn_color, fg='white',
-                        borderwidth=0, relief='flat', padx=0, pady=0,
-                        highlightthickness=0)
-    
+
+    if args.color is not None:
+        btn_color = args.color
+    else:
+        btn_color = DARK_ACCENT_COLOR if args.darkmode else LIGHT_ACCENT_COLOR
+
+    fg_color = DARK_TEXT_COLOR if not args.darkmode else LIGHT_TEXT_COLOR
+
+    refresh_btn = tk.Button(
+        frame,
+        text="⟳",
+        command=update_dashboard,
+        font=("Arial", 20),
+        bg=btn_color,
+        fg=fg_color,
+        borderwidth=0,
+        relief="flat",
+        padx=0,
+        pady=0,
+        highlightthickness=0,
+    )
+    fullscreen_btn = tk.Button(
+        frame,
+        text="⤢",
+        command=toggle_fullscreen,
+        font=("Arial", 20),
+        bg=btn_color,
+        fg=fg_color,
+        borderwidth=0,
+        relief="flat",
+        padx=0,
+        pady=0,
+        highlightthickness=0,
+    )
+
     tk_root.bind("<Configure>", update_button_position)
-    
+
     tk_root.update_idletasks()
-    
+
     update_button_position()
-    
+
     update_dashboard()
     tk_root.mainloop()
 
