@@ -111,6 +111,8 @@ def toggle_fullscreen(event=None) -> None:
     global tk_root
     current = tk_root.attributes("-fullscreen")
     tk_root.attributes("-fullscreen", not current)
+    # My RPI is super slow, so I have to add this delay here or else the update code
+    # uses the old width and height when re-rendering
     tk_root.after(1000, update_dashboard)
 
 
