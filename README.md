@@ -91,7 +91,11 @@ cd LCD-show
 sudo ./LCD5-show
 ```
 
-### 3. Set Up an Easy Way to Start the Dashboard
+### 3. Turn Off Screen Blanking
+
+Go to Preferences -> Control Center -> Display and turn off the toggle for screen blanking.
+
+### 4. Set Up an Easy Way to Start the Dashboard
 
 Either follow the steps below to make an autoscript or just have a bash script on the desktop that starts the code. Personally, I have both and its convenient with the touchscreen
 
