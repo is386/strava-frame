@@ -107,15 +107,23 @@ def generate_image():
     return img
 
 
-def toggle_fullscreen(event=None):
+def toggle_fullscreen(event=None) -> None:
     global tk_root
     current = tk_root.attributes("-fullscreen")
     tk_root.attributes("-fullscreen", not current)
-    tk_root.after(5, update_dashboard)
+    tk_root.after(1000, update_dashboard)
 
 
-def update_button_position(event=None):
+def is_sleep_mode() -> bool:
+    now = datetime.now()
+    return now.hour >= SLEEP_MODE_START or now.hour < SLEEP_MODE_END
+
+
+def update_button_position(event=None) -> None:
     global tk_root, refresh_btn, fullscreen_btn
+
+    if is_sleep_mode():
+        return
 
     window_width = tk_root.winfo_width()
     window_height = tk_root.winfo_height()
@@ -159,15 +167,16 @@ def update_button_position(event=None):
     )
 
 
-def update_dashboard():
-    global tk_root, tk_label, tk_photo
+def update_dashboard() -> None:
+    global tk_root, tk_label, tk_photo, refresh_btn, fullscreen_btn
 
-    now = datetime.now()
-
-    if now.hour >= SLEEP_MODE_START or now.hour < SLEEP_MODE_END:
+    if is_sleep_mode():
         img = render_sleep_mode()
+        refresh_btn.place_forget()
+        fullscreen_btn.place_forget()
     else:
         img = generate_image()
+        update_button_position()
 
     window_width = tk_root.winfo_width()
     window_height = tk_root.winfo_height()
@@ -187,7 +196,7 @@ def update_dashboard():
     tk_root.after(REFRESH_TIME, update_dashboard)
 
 
-def run_dashboard():
+def run_dashboard() -> None:
     global tk_root, tk_label, refresh_btn, fullscreen_btn
     tk_root = tk.Tk()
     tk_root.title("")
@@ -246,9 +255,8 @@ def run_dashboard():
 
     tk_root.update_idletasks()
 
-    update_button_position()
-
     update_dashboard()
+
     tk_root.mainloop()
 
 
