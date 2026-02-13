@@ -63,9 +63,7 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
         "miles": round(meters_to_miles(latest_activity.distance), 2),
         "time": seconds_to_timestamp(latest_activity.moving_time),
         "pace": seconds_to_timestamp(
-            calculate_pace(
-                latest_activity.distance, latest_activity.moving_time
-            )
+            calculate_pace(latest_activity.distance, latest_activity.moving_time)
         ),
         "title": latest_activity.name,
         "date": latest_activity.start_date.strftime("%B %-d"),
