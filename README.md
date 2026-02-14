@@ -4,6 +4,13 @@ A Strava Dashboard I use on my Raspberry Pi frame. This code is not Raspbery Pi 
 
 <img src="docs/dashboard.png" width="400"> <img src="docs/dashboard_dark.png" width="400">
 
+## Features
+
+- Strava API Integration
+- Yearly stats, monthly mileage, and the latest run
+- Dark Mode and Custom Accent Colors
+- Auto Sleep
+
 ## Setup
 
 ### 1. Install Python
@@ -76,7 +83,7 @@ Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit | r = refresh
 
 ### 1. Buy the Hardware
 
-This is the hardware I used for this project, and it was all plug-and-play except the touch screendrivers on the display:
+This is the hardware I used for this project, and it was all plug-and-play except the touchscreen drivers for the display:
 
 - Raspberry Pi 2B (newer models should be compatible with the rest of the hardware)
 - [USB WiFi Adapter for Raspberry Pi](https://www.amazon.com/dp/B06Y2HKT75?ref=ppx_yo2ov_dt_b_fed_asin_title)
