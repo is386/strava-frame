@@ -52,6 +52,8 @@ MARGIN_TOP = 10
 MARGIN_BOTTOM = 10
 INNER_PADDING = 12
 CARD_SPACING = 15
+WIDTH, HEIGHT = 800, 480
+HEADER_HEIGHT = 75
 
 
 # =========================
@@ -77,7 +79,7 @@ def draw_header(draw: ImageDraw.Draw, width: int, header_height: int):
     text_h = bbox[3] - bbox[1]
     text_x = (width - text_w) // 2
     text_y = (header_height - text_h) // 2 - bbox[1]
-    draw.text((text_x, text_y), title, font=HEADER_FONT, fill=BG_COLOR)
+    draw.text((text_x, text_y + 10), title, font=HEADER_FONT, fill=BG_COLOR)
 
 
 # =========================
@@ -379,10 +381,6 @@ def render(
     color="",
     dark_mode=False,
 ) -> PILImage:
-
-    WIDTH, HEIGHT = 800, 480
-    HEADER_HEIGHT = 75
-
     # Set color scheme based on dark_mode
     global ACCENT_COLOR, BG_COLOR, TEXT_COLOR, LABEL_COLOR, CARD_COLOR, BORDER_COLOR
 
