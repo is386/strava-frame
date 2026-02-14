@@ -106,7 +106,7 @@ Go to Preferences -> Control Center -> Display and turn off the toggle for scree
 
 ### 4. Turn Off Notifications
 
-Right click the task bar and then go to Panel Settings -> Notifications and turn of notifications
+Right click the task bar and then go to Panel Settings -> Notifications and turn off notifications
 
 ### 5. Set Up an Easy Way to Start the Dashboard
 
