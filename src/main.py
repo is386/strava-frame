@@ -9,6 +9,8 @@ from display import (
     DARK_ACCENT_COLOR,
     DARK_TEXT_COLOR,
     LIGHT_TEXT_COLOR,
+    WIDTH,
+    HEIGHT,
 )
 from data import (
     get_yearly_strava_activities,
@@ -134,7 +136,7 @@ def update_button_position(event=None) -> None:
         tk_root.after(100, update_button_position)
         return
 
-    img_width, img_height = 800, 480
+    img_width, img_height = WIDTH, HEIGHT
 
     scale_w = window_width / img_width
     scale_h = window_height / img_height
@@ -149,7 +151,7 @@ def update_button_position(event=None) -> None:
     scaled_img_height = int(img_height * scale)
 
     x_offset = (window_width - scaled_img_width) // 2
-    y_offset = (window_height - scaled_img_height + 10) // 2
+    y_offset = (window_height - scaled_img_height + 30) // 2
 
     refresh_btn.config(font=("Arial", font_size))
     fullscreen_btn.config(font=("Arial", font_size))
@@ -203,7 +205,7 @@ def run_dashboard() -> None:
     tk_root = tk.Tk()
     tk_root.title("")
 
-    tk_root.geometry("800x480")
+    tk_root.geometry(f"{WIDTH}x{HEIGHT}")
 
     tk_root.resizable(False, False)
     tk_root.attributes("-fullscreen", args.fullscreen)
