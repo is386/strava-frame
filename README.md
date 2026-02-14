@@ -2,7 +2,7 @@
 
 A Strava Dashboard I use on my Raspberry Pi frame. This code is not Raspbery Pi specific and I have tested it on Linux Mint and Windows 11 w/ WSL2.
 
-<img src="docs/dashboard.png" width="400"> <img src="docs/dashboard_dark.png" width="400">
+<img src="docs/dashboard.png" width="400"> <img src="docs/dashboard_dark.png" width="400"> <img src="docs/framed.jpg" width="400">
 
 ## Features
 
@@ -88,6 +88,8 @@ This is the hardware I used for this project, and it was all plug-and-play excep
 - Raspberry Pi 2B (newer models should be compatible with the rest of the hardware)
 - [USB WiFi Adapter for Raspberry Pi](https://www.amazon.com/dp/B06Y2HKT75?ref=ppx_yo2ov_dt_b_fed_asin_title)
 - [ELECROW 5-Inch Resistive Touch Screen TFT LCD Display](https://www.amazon.com/dp/B013JECYF2?ref=ppx_yo2ov_dt_b_fed_asin_title)
+- [Micro USB to USB C angled adapter](https://www.amazon.com/dp/B0CSKB3KG7?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1): This helps hide the cable, since the connection is at the top
+- [Picture Frame](https://www.michaels.com/product/basics-studio-black-tabletop-frame-by-studio-decor-10759580?michaelsStore=3716&inv=2): This is the specific frame I used. I had to add a cutout for the HDMI connector and I had to sand the inside bottom of the frame to get things aligned properly.
 
 ### 2. Set Up the Display Drivers
 
