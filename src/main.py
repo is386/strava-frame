@@ -149,7 +149,7 @@ def update_button_position(event=None) -> None:
     scaled_img_height = int(img_height * scale)
 
     x_offset = (window_width - scaled_img_width) // 2
-    y_offset = (window_height - scaled_img_height) // 2
+    y_offset = (window_height - scaled_img_height + 10) // 2
 
     refresh_btn.config(font=("Arial", font_size))
     fullscreen_btn.config(font=("Arial", font_size))
