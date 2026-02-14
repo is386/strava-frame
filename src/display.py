@@ -381,7 +381,7 @@ def render(
 ) -> PILImage:
 
     WIDTH, HEIGHT = 800, 480
-    HEADER_HEIGHT = 60
+    HEADER_HEIGHT = 75
 
     # Set color scheme based on dark_mode
     global ACCENT_COLOR, BG_COLOR, TEXT_COLOR, LABEL_COLOR, CARD_COLOR, BORDER_COLOR
