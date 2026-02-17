@@ -12,6 +12,8 @@ ASSETS_DIR = os.path.join(SCRIPT_DIR, "..", "assets")
 # Fonts and colors
 # =========================
 HEADER_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeuib.ttf"), 28)
+STREAK_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeuib.ttf"), 48)
+STREAK_LABEL_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeuib.ttf"), 16)
 YEAR_METRIC_VALUE_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeui.ttf"), 48)
 LABEL_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeui.ttf"), 16)
 LATEST_TITLE_FONT = ImageFont.truetype(os.path.join(ASSETS_DIR, "segoeuib.ttf"), 22)
@@ -297,6 +299,80 @@ def draw_monthly_graph(
 # =========================
 # Latest Activity Card
 # =========================
+def colorize_icon(icon: Image.Image, hex_color: str) -> Image.Image:
+    """Recolor a black-on-transparent icon to the given hex color."""
+    r = int(hex_color[1:3], 16)
+    g = int(hex_color[3:5], 16)
+    b = int(hex_color[5:7], 16)
+    icon = icon.convert("RGBA")
+    pixels = icon.load()
+    for y in range(icon.height):
+        for x in range(icon.width):
+            pr, pg, pb, pa = pixels[x, y]
+            # Treat darkness as the mask — black pixels become accent color
+            brightness = (pr + pg + pb) / 3
+            alpha = int((1 - brightness / 255) * pa)
+            pixels[x, y] = (r, g, b, alpha)
+    return icon
+
+
+def draw_streak_card(
+    draw: ImageDraw.Draw,
+    img: Image.Image,
+    streak: int,
+    left_width: int,
+    width: int,
+    top_offset: int,
+):
+    right_area_width = width - MARGIN_RIGHT - (left_width + MARGIN_LEFT)
+    quarter_width = right_area_width // 4
+
+    area_x0 = width - MARGIN_RIGHT - quarter_width + CARD_SPACING
+    area_y0 = top_offset + CARD_SPACING
+    area_x1 = width - MARGIN_RIGHT
+    area_y1 = area_y0 + 149  # same bottom as latest activity card
+    area_w = area_x1 - area_x0
+    area_h = area_y1 - area_y0
+
+    # Measure label and anchor it to the bottom of the area
+    label_text = "Weeks"
+    label_bbox = draw.textbbox((0, 0), label_text, font=LABEL_FONT)
+    label_w = label_bbox[2] - label_bbox[0]
+    label_h = label_bbox[3] - label_bbox[1]
+    label_padding = 6
+    label_y = area_y1 - label_h - label_bbox[1] - 5
+
+    # Flame occupies the space above the label
+    flame_y0 = area_y0
+    flame_y1 = label_y - label_padding
+    flame_h = flame_y1 - flame_y0
+
+    # Load, colorize, and scale fire to fit the flame zone
+    fire_raw = Image.open(os.path.join(ASSETS_DIR, "fire.png")).convert("RGBA")
+    fire_colored = colorize_icon(fire_raw, ACCENT_COLOR)
+    scale = min(area_w / fire_colored.width, flame_h / fire_colored.height) * 2
+    fire_w = int(fire_colored.width * scale)
+    fire_h = int(fire_colored.height * scale)
+    fire_resized = fire_colored.resize((fire_w, fire_h), Image.Resampling.LANCZOS)
+
+    fire_x = area_x0 + (area_w - fire_w) // 2
+    fire_y = flame_y0 + (flame_h - fire_h) // 2
+    img.paste(fire_resized, (fire_x, fire_y), fire_resized)
+
+    # Draw streak number in the bottom third of the flame
+    streak_text = str(streak)
+    streak_bbox = draw.textbbox((0, 0), streak_text, font=STREAK_FONT)
+    streak_w = streak_bbox[2] - streak_bbox[0]
+    streak_h = streak_bbox[3] - streak_bbox[1]
+    text_x = area_x0 + (area_w - streak_w) // 2 - streak_bbox[0]
+    text_y = area_y0 + (area_h - streak_h) // 2 - streak_bbox[1] + 15 
+    draw.text((text_x, text_y), streak_text, font=STREAK_FONT, fill=BG_COLOR)
+
+    # "Weeks" label anchored to bottom of area, centered, in accent color
+    label_x = area_x0 + (area_w - label_w) // 2 - label_bbox[0]
+    draw.text((label_x, label_y), label_text, font=STREAK_LABEL_FONT, fill=ACCENT_COLOR)
+
+
 def draw_latest_activity(
     draw: ImageDraw.Draw,
     latest_activity: Dict,
@@ -304,10 +380,13 @@ def draw_latest_activity(
     width: int,
     top_offset: int,
 ):
-    # Card coordinates
+    right_area_width = width - MARGIN_RIGHT - (left_width + MARGIN_LEFT)
+    quarter_width = right_area_width // 4
+
+    # Card coordinates — 75% of the right column width
     card_x0 = left_width + MARGIN_LEFT
     card_y0 = top_offset + CARD_SPACING
-    card_x1 = width - MARGIN_RIGHT
+    card_x1 = width - MARGIN_RIGHT - quarter_width
     card_y1 = card_y0 + 149  # make this shorter, adjust as needed
     draw_card(draw, card_x0, card_y0, card_x1, card_y1)
 
@@ -331,7 +410,7 @@ def draw_latest_activity(
 
     # Metrics (Distance, Time, Pace)
     metrics = [
-        ("Distance", f"{latest_activity.get('miles', 0):.2f} mi"),
+        ("Distance (mi)", f"{latest_activity.get('miles', 0):.2f}"),
         ("Time", latest_activity.get("time", "0:00")),
         ("Pace", latest_activity.get("pace", "0:00")),
     ]
@@ -342,28 +421,18 @@ def draw_latest_activity(
     panel_bottom = inner_y1
     panel_height = panel_bottom - panel_top
 
-    # Size all sections to the widest block so they're uniform
-    max_block_width = 0
+    # Compute each section's width based on its own content
+    section_widths = []
     for label, value in metrics:
         value_text = f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
         value_bbox = draw.textbbox((0, 0), value_text, font=METRIC_VALUE_FONT)
         label_bbox = draw.textbbox((0, 0), label, font=LABEL_FONT)
-        block_width = max(value_bbox[2] - value_bbox[0], label_bbox[2] - label_bbox[0])
-        max_block_width = max(max_block_width, block_width)
-    section_width = max_block_width + section_padding * 2
+        content_width = max(value_bbox[2] - value_bbox[0], label_bbox[2] - label_bbox[0])
+        section_widths.append(content_width + section_padding * 2)
 
-    # Draw vertical dividers at section boundaries
-    for i in range(1, len(metrics)):
-        div_x = inner_x0 + i * section_width
-        draw.line(
-            [(div_x, panel_top + 30), (div_x, panel_bottom - 5)],
-            fill=BORDER_COLOR,
-            width=1,
-        )
-
+    # Draw content and dividers, advancing x_cursor by each section's own width
+    x_cursor = inner_x0
     for i, (label, value) in enumerate(metrics):
-        # First section aligns with card inner edge, rest align just after their divider
-        x = inner_x0 + i * section_width + (section_padding if i > 0 else 1)
         value_text = f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
         value_bbox = draw.textbbox((0, 0), value_text, font=METRIC_VALUE_FONT)
         label_bbox = draw.textbbox((0, 0), label, font=LABEL_FONT)
@@ -371,6 +440,8 @@ def draw_latest_activity(
         label_h = label_bbox[3] - label_bbox[1]
         block_height = value_h + vertical_padding + label_h
         y_top = panel_top + (panel_height - block_height) // 2
+
+        x = x_cursor + (section_padding if i > 0 else 1)
         draw.text((x, y_top), value_text, font=METRIC_VALUE_FONT, fill=TEXT_COLOR)
         draw.text(
             (x, y_top + value_h + vertical_padding + 8),
@@ -378,6 +449,16 @@ def draw_latest_activity(
             font=LABEL_FONT,
             fill=LABEL_COLOR,
         )
+
+        x_cursor += section_widths[i]
+
+        # Draw divider after this section (except the last)
+        if i < len(metrics) - 1:
+            draw.line(
+                [(x_cursor, panel_top + 30), (x_cursor, panel_bottom - 5)],
+                fill=BORDER_COLOR,
+                width=1,
+            )
 
 
 # =========================
@@ -389,6 +470,7 @@ def render(
     activities: int,
     mileage_per_month: List[int],
     latest_activity: Dict,
+    streak: int = 0,
     color="",
     dark_mode=False,
 ) -> PILImage:
@@ -426,6 +508,7 @@ def render(
     draw_latest_activity(
         draw, latest_activity, left_width, WIDTH, top_offset=graph_bottom
     )
+    draw_streak_card(draw, img, streak, left_width, WIDTH, top_offset=graph_bottom)
 
     return img
 
