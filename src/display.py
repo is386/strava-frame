@@ -336,25 +336,34 @@ def draw_latest_activity(
         ("Pace", latest_activity.get("pace", "0:00")),
     ]
 
-    spacing_between_blocks = 60
+    section_padding = 12
     vertical_padding = 8
     panel_top = date_y + 10
     panel_bottom = inner_y1
     panel_height = panel_bottom - panel_top
 
-    block_widths, x_positions = [], []
-    current_x = inner_x0
+    # Size all sections to the widest block so they're uniform
+    max_block_width = 0
     for label, value in metrics:
         value_text = f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
         value_bbox = draw.textbbox((0, 0), value_text, font=METRIC_VALUE_FONT)
         label_bbox = draw.textbbox((0, 0), label, font=LABEL_FONT)
         block_width = max(value_bbox[2] - value_bbox[0], label_bbox[2] - label_bbox[0])
-        block_widths.append(block_width)
-        x_positions.append(current_x)
-        current_x += block_width + spacing_between_blocks
+        max_block_width = max(max_block_width, block_width)
+    section_width = max_block_width + section_padding * 2
+
+    # Draw vertical dividers at section boundaries
+    for i in range(1, len(metrics)):
+        div_x = inner_x0 + i * section_width
+        draw.line(
+            [(div_x, panel_top + 30), (div_x, panel_bottom - 5)],
+            fill=BORDER_COLOR,
+            width=1,
+        )
 
     for i, (label, value) in enumerate(metrics):
-        x = x_positions[i]
+        # First section aligns with card inner edge, rest align just after their divider
+        x = inner_x0 + i * section_width + (section_padding if i > 0 else 1)
         value_text = f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
         value_bbox = draw.textbbox((0, 0), value_text, font=METRIC_VALUE_FONT)
         label_bbox = draw.textbbox((0, 0), label, font=LABEL_FONT)
@@ -364,23 +373,10 @@ def draw_latest_activity(
         y_top = panel_top + (panel_height - block_height) // 2
         draw.text((x, y_top), value_text, font=METRIC_VALUE_FONT, fill=TEXT_COLOR)
         draw.text(
-            (x + 1, y_top + value_h + vertical_padding + 8),
+            (x, y_top + value_h + vertical_padding + 8),
             label,
             font=LABEL_FONT,
             fill=LABEL_COLOR,
-        )
-
-    # Draw vertical dividers between metrics
-    for i in range(len(metrics) - 1):
-        x0 = (
-            x_positions[i]
-            + block_widths[i]
-            + (x_positions[i + 1] - (x_positions[i] + block_widths[i])) // 2
-        )
-        draw.line(
-            [(x0, panel_top + 30), (x0, panel_bottom - 5)],
-            fill=BORDER_COLOR,
-            width=1,
         )
 
 
