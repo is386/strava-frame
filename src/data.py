@@ -73,11 +73,6 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
 def parse_yearly_data(
     activities: list[SummaryActivity],
 ) -> Tuple[int, float, float, list[float]]:
-    now = datetime.now()
-    jan_first = datetime(year=now.year, month=1, day=1)
-    days_ytd = (now - jan_first).days + 1
-    weeks_ytd = days_ytd / 7
-
     total_activities = len(activities)
     total_mileage = 0.0
     mileage_per_month = [0.0] * 12
@@ -88,6 +83,7 @@ def parse_yearly_data(
         mileage_per_month[activity.start_date.month - 1] += mileage
 
     mileage_per_month = [round(m, 2) for m in mileage_per_month]
+    weeks_ytd = datetime.now().isocalendar().week
 
     return (
         total_activities,
