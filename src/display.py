@@ -77,7 +77,7 @@ def draw_header(draw: ImageDraw.Draw, width: int, header_height: int):
     bbox = draw.textbbox((0, 0), title, font=HEADER_FONT)
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
-    text_x = (width - text_w) // 2
+    text_x = (width - text_w) // 2 - bbox[0]
     text_y = (header_height - text_h) // 2 - bbox[1]
     draw.text((text_x, text_y + 10), title, font=HEADER_FONT, fill=BG_COLOR)
 
@@ -92,12 +92,12 @@ def draw_metric(
     num_bbox = draw.textbbox((0, 0), num_text, font=YEAR_METRIC_VALUE_FONT)
     num_w = num_bbox[2] - num_bbox[0]
     num_h = num_bbox[3] - num_bbox[1]
-    num_x = center_x - num_w // 2
+    num_x = center_x - num_w // 2 - num_bbox[0]
     draw.text((num_x, y), num_text, font=YEAR_METRIC_VALUE_FONT, fill=TEXT_COLOR)
 
     label_bbox = draw.textbbox((0, 0), label, font=LABEL_FONT)
     label_w = label_bbox[2] - label_bbox[0]
-    label_x = center_x - label_w // 2
+    label_x = center_x - label_w // 2 - label_bbox[0]
     label_y = y + num_h + 20
     draw.text((label_x, label_y + 5), label, font=LABEL_FONT, fill=LABEL_COLOR)
 
@@ -269,10 +269,25 @@ def draw_monthly_graph(
             [x0, bar_top, x1, bar_bottom], radius=2, fill=ACCENT_COLOR
         )
 
-        # Month label
+        # Value label above bar (only for months with data)
+        if val > 0:
+            val_text = str(round(val))
+            val_bbox = draw.textbbox((0, 0), val_text, font=LABEL_FONT)
+            val_w = val_bbox[2] - val_bbox[0]
+            val_x = x0 + (bar_width - val_w) // 2 - val_bbox[0]
+            if bar_height > 25:
+                draw.text(
+                    (val_x, bar_top + 4), val_text, font=LABEL_FONT, fill=BG_COLOR
+                )
+            else:
+                draw.text(
+                    (val_x, bar_top - 14), val_text, font=LABEL_FONT, fill=TEXT_COLOR
+                )
+
+        # Month label (existing code)
         month_bbox = draw.textbbox((0, 0), months[i], font=LABEL_FONT)
         month_w = month_bbox[2] - month_bbox[0]
-        month_x = x0 + (bar_width - month_w) // 2
+        month_x = x0 + (bar_width - month_w) // 2 - month_bbox[0]
         month_y = bar_bottom + 4
         draw.text((month_x, month_y), months[i], font=LABEL_FONT, fill=LABEL_COLOR)
 
