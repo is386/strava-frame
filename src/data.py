@@ -3,7 +3,7 @@ import logging
 from dotenv import load_dotenv
 from stravalib.client import Client
 from stravalib.model import SummaryActivity
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Tuple
 
 logging.getLogger("stravalib").setLevel(logging.ERROR)
@@ -26,6 +26,48 @@ def calculate_pace(meters: int, seconds: int) -> int:
     miles = meters_to_miles(meters)
     seconds_per_mile = seconds / miles
     return round(seconds_per_mile)
+
+
+def calculate_streak(activities: list[SummaryActivity]) -> int:
+    if not activities:
+        return 0
+
+    def week_start(date: datetime) -> datetime:
+        # Strip tzinfo so everything is naive local-equivalent
+        date = date.replace(tzinfo=None)
+        return (date - timedelta(days=date.weekday())).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+
+    active_weeks = set(week_start(a.start_date) for a in activities)
+
+    current_week = week_start(datetime.now())
+
+    if current_week not in active_weeks:
+        current_week -= timedelta(weeks=1)
+
+    streak = 0
+    while current_week in active_weeks:
+        streak += 1
+        current_week -= timedelta(weeks=1)  
+    return streak
+
+
+def get_all_strava_activities() -> list[SummaryActivity]:
+    load_dotenv()
+    STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
+    STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
+    STRAVA_REFRESH_TOKEN = os.getenv("STRAVA_REFRESH_TOKEN")
+
+    client = Client()
+    tokens = client.refresh_access_token(
+        client_id=STRAVA_CLIENT_ID,
+        client_secret=STRAVA_CLIENT_SECRET,
+        refresh_token=STRAVA_REFRESH_TOKEN,
+    )
+    client.access_token = tokens["access_token"]
+
+    return list(client.get_activities())
 
 
 def get_yearly_strava_activities() -> list[SummaryActivity]:

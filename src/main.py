@@ -14,6 +14,8 @@ from display import (
 )
 from data import (
     get_yearly_strava_activities,
+    get_all_strava_activities,
+    calculate_streak,
     parse_latest_activity,
     parse_yearly_data,
 )
@@ -25,6 +27,8 @@ SLEEP_MODE_END = 6
 REFRESH_TIME = 15 * 60 * 1000
 
 activities_cache = []
+streak_cache = None
+was_sleeping = True
 tk_root = None
 tk_label = None
 tk_photo = None
@@ -68,6 +72,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def fetch_and_update_streak():
+    global streak_cache
+    try:
+        all_activities = get_all_strava_activities()
+        streak_cache = calculate_streak(all_activities)
+    except (RuntimeError, RequestException) as e:
+        print(f"Failed to fetch streak: {e}")
+
+
 def fetch_and_parse_activities():
     global activities_cache
     try:
@@ -90,6 +103,14 @@ def fetch_and_parse_activities():
 
 
 def generate_image():
+    global was_sleeping
+
+    # We generate the streak once a day for performance and rate limiting reasons
+    # So it generates the streak right after it wakes up from sleep mode
+    if was_sleeping:
+        was_sleeping = False
+        fetch_and_update_streak()
+
     (
         total_activities,
         total_mileage,
@@ -97,15 +118,18 @@ def generate_image():
         mileage_per_month,
         latest_activity,
     ) = fetch_and_parse_activities()
+
     img = render(
         total_mileage,
         avg_weekly_mileage,
         total_activities,
         mileage_per_month,
         latest_activity,
+        streak_cache or 0,
         args.color,
         args.darkmode,
     )
+
     return img
 
 
@@ -172,9 +196,10 @@ def update_button_position(event=None) -> None:
 
 
 def update_dashboard() -> None:
-    global tk_root, tk_label, tk_photo, refresh_btn, fullscreen_btn
+    global tk_root, tk_label, tk_photo, refresh_btn, fullscreen_btn, was_sleeping
 
     if is_sleep_mode():
+        was_sleeping = True
         img = render_sleep_mode()
         refresh_btn.place_forget()
         fullscreen_btn.place_forget()
