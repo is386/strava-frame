@@ -1,4 +1,5 @@
 import os
+from config import WIDTH, HEIGHT, ACCENT_COLOR, DARK_MODE
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 from PIL.Image import Image as PILImage
@@ -6,8 +7,6 @@ from typing import List, Dict
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(SCRIPT_DIR, "..", "assets")
-
-WIDTH, HEIGHT = 800, 480
 
 BASE_WIDTH, BASE_HEIGHT = 800, 480
 SCALE = min(WIDTH / BASE_WIDTH, HEIGHT / BASE_HEIGHT)
@@ -44,21 +43,18 @@ MONTHS = [
     "Dec",
 ]
 
-LIGHT_ACCENT_COLOR = "#FC4C02"
 LIGHT_BG_COLOR = "#FAFAFA"
 LIGHT_TEXT_COLOR = "#000000"
 LIGHT_LABEL_COLOR = "#888888"
 LIGHT_CARD_COLOR = "#FFFFFF"
 LIGHT_BORDER_COLOR = "#E0E0E0"
 
-DARK_ACCENT_COLOR = "#fa8b5c"
 DARK_BG_COLOR = "#1A1A1A"
 DARK_TEXT_COLOR = "#E0E0E0"
 DARK_LABEL_COLOR = "#999999"
-DARK_CARD_COLOR = "#2b2b2b"
+DARK_CARD_COLOR = "#2B2B2B"
 DARK_BORDER_COLOR = "#404040"
 
-ACCENT_COLOR = LIGHT_ACCENT_COLOR
 BG_COLOR = LIGHT_BG_COLOR
 TEXT_COLOR = LIGHT_TEXT_COLOR
 LABEL_COLOR = LIGHT_LABEL_COLOR
@@ -264,7 +260,6 @@ def draw_streak(
     area_y0 = top_offset + CARD_SPACING
     area_y1 = area_y0 + BOTTOM_ROW_HEIGHT
     area_w = area_x1 - area_x0
-    area_h = area_y1 - area_y0
 
     fire_raw = Image.open(os.path.join(ASSETS_DIR, "fire.png")).convert("RGBA")
     fire_colored = colorize_icon(fire_raw, ACCENT_COLOR)
@@ -369,23 +364,17 @@ def render(
     mileage_per_month: List[float],
     latest_activity: Dict,
     streak: int = 0,
-    color: str = "",
-    dark_mode: bool = False,
 ) -> PILImage:
     global ACCENT_COLOR, BG_COLOR, TEXT_COLOR, LABEL_COLOR, CARD_COLOR, BORDER_COLOR
 
-    if dark_mode:
-        ACCENT_COLOR, BG_COLOR, TEXT_COLOR, LABEL_COLOR, CARD_COLOR, BORDER_COLOR = (
-            DARK_ACCENT_COLOR,
+    if DARK_MODE:
+        BG_COLOR, TEXT_COLOR, LABEL_COLOR, CARD_COLOR, BORDER_COLOR = (
             DARK_BG_COLOR,
             DARK_TEXT_COLOR,
             DARK_LABEL_COLOR,
             DARK_CARD_COLOR,
             DARK_BORDER_COLOR,
         )
-
-    if color:
-        ACCENT_COLOR = color
 
     img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
     draw = ImageDraw.Draw(img)
@@ -399,7 +388,7 @@ def render(
     return img
 
 
-def generate_image(streak: int, color: str, dark_mode: bool) -> PILImage:
+def generate_image(streak: int) -> PILImage:
     from data import refresh_activities
 
     (
@@ -416,8 +405,6 @@ def generate_image(streak: int, color: str, dark_mode: bool) -> PILImage:
         miles_per_month,
         latest_activity,
         streak,
-        color,
-        dark_mode,
     )
 
 
