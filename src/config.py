@@ -24,19 +24,18 @@ def validate_hex_color(color: str) -> str:
 with open(_CONFIG_PATH, "rb") as _f:
     _config = tomllib.load(_f)
 
-# Strava credentials
 STRAVA_CLIENT_ID: str = _config["strava"]["client_id"]
 STRAVA_CLIENT_SECRET: str = _config["strava"]["client_secret"]
 STRAVA_REFRESH_TOKEN: str = _config["strava"]["refresh_token"]
 
-# Display
 ACCENT_COLOR: str = validate_hex_color(_config["display"]["accent_color"])
 DARK_MODE: bool = _config["display"]["dark_mode"]
 FULL_SCREEN: bool = _config["display"]["full_screen"]
 WIDTH: int = _config["display"]["width"]
 HEIGHT: int = _config["display"]["height"]
 
-# App behavior
 REFRESH_TIME: int = _config["app"]["refresh_time_minutes"] * 60 * 1000
-SLEEP_MODE_START: int = _config["app"]["sleep_mode_start"]
-SLEEP_MODE_END: int = _config["app"]["sleep_mode_end"]
+
+SLEEP_MODE_ENABLED: bool = _config["sleep_mode"]["enabled"]
+SLEEP_MODE_START: int = _config["sleep_mode"]["start_hour"]
+SLEEP_MODE_END: int = _config["sleep_mode"]["end_hour"]
