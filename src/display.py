@@ -399,5 +399,27 @@ def render(
     return img
 
 
+def generate_image(streak: int, color: str, dark_mode: bool) -> PILImage:
+    from data import refresh_activities
+
+    (
+        total_activities,
+        total_miles,
+        avg_weekly_miles,
+        miles_per_month,
+        latest_activity,
+    ) = refresh_activities()
+    return render(
+        total_miles,
+        avg_weekly_miles,
+        total_activities,
+        miles_per_month,
+        latest_activity,
+        streak,
+        color,
+        dark_mode,
+    )
+
+
 def render_sleep_mode() -> PILImage:
     return Image.new("RGB", (WIDTH, HEIGHT), color="black")
