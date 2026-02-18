@@ -1,25 +1,25 @@
-import argparse
 import tkinter as tk
-import re
+from config import (
+    REFRESH_TIME,
+    SLEEP_MODE_START,
+    SLEEP_MODE_END,
+    ACCENT_COLOR,
+    HEIGHT,
+    WIDTH,
+    DARK_MODE,
+    FULL_SCREEN,
+)
 from display import (
     generate_image,
     render_sleep_mode,
-    LIGHT_ACCENT_COLOR,
-    DARK_ACCENT_COLOR,
     DARK_TEXT_COLOR,
     LIGHT_TEXT_COLOR,
-    WIDTH,
-    HEIGHT,
     HEADER_HEIGHT,
 )
 import data
 from data import refresh_streak
 from datetime import datetime
 from PIL import ImageTk, Image
-
-REFRESH_TIME = 15 * 60 * 1000
-SLEEP_MODE_START = 22
-SLEEP_MODE_END = 6
 
 
 def is_sleep_mode() -> bool:
@@ -33,39 +33,6 @@ tk_label = None
 tk_photo = None
 refresh_btn = None
 fullscreen_btn = None
-
-
-def hex_color(value):
-    value = value.lstrip("#")
-    if not re.match(r"^[0-9A-Fa-f]{6}$|^[0-9A-Fa-f]{3}$", value):
-        raise argparse.ArgumentTypeError(f"{value} is not a valid hex color")
-    return f"#{value}"
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Strava Frame",
-        epilog="Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit | r = refresh",
-    )
-    parser.add_argument(
-        "-c",
-        "--color",
-        type=hex_color,
-        help="set accent color (must be hexadecimal color value ex: FC4C02)",
-    )
-    parser.add_argument(
-        "-f",
-        "--fullscreen",
-        action="store_true",
-        help="run in fullscreen mode",
-    )
-    parser.add_argument(
-        "-d",
-        "--darkmode",
-        action="store_true",
-        help="use dark mode",
-    )
-    return parser.parse_args()
 
 
 def toggle_fullscreen(event=None) -> None:
@@ -127,7 +94,7 @@ def update_dashboard() -> None:
         if was_sleeping:
             was_sleeping = False
             refresh_streak()
-        img = generate_image(data.streak_cache or 0, args.color, args.darkmode)
+        img = generate_image(data.streak_cache or 0)
         update_button_position()
 
     window_width = tk_root.winfo_width()
@@ -151,12 +118,10 @@ def run_dashboard() -> None:
     tk_root.title("")
     tk_root.geometry(f"{WIDTH}x{HEIGHT}")
     tk_root.resizable(False, False)
-    tk_root.attributes("-fullscreen", args.fullscreen)
+    tk_root.attributes("-fullscreen", FULL_SCREEN)
     tk_root.config(cursor="none")
 
     tk_root.bind("<Escape>", lambda e: tk_root.destroy())
-    tk_root.bind("<F11>", toggle_fullscreen)
-    tk_root.bind("<r>", lambda e: update_dashboard())
 
     frame = tk.Frame(tk_root)
     frame.pack(expand=True, fill="both")
@@ -164,14 +129,11 @@ def run_dashboard() -> None:
     tk_label = tk.Label(frame)
     tk_label.pack(expand=True)
 
-    btn_color = args.color or (
-        DARK_ACCENT_COLOR if args.darkmode else LIGHT_ACCENT_COLOR
-    )
-    fg_color = LIGHT_TEXT_COLOR if args.darkmode else DARK_TEXT_COLOR
+    fg_color = LIGHT_TEXT_COLOR if DARK_MODE else DARK_TEXT_COLOR
 
     shared_btn_config = dict(
         font=("Arial", 20),
-        bg=btn_color,
+        bg=ACCENT_COLOR,
         fg=fg_color,
         borderwidth=0,
         relief="flat",
@@ -191,5 +153,4 @@ def run_dashboard() -> None:
     tk_root.mainloop()
 
 
-args = parse_args()
 run_dashboard()

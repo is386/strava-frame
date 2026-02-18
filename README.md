@@ -15,8 +15,6 @@ A Strava Dashboard I use on my Raspberry Pi frame. This code is not Raspbery Pi 
 
 ### 1. Install Python
 
-I recommend **Python 3.11**.
-
 ### 2. Install Dependencies
 
 ```bash
@@ -33,19 +31,13 @@ sudo apt install python3-tk, python3-pil.imagetk
    - **Client ID**
    - **Client Secret**
    - **Refresh Token**
-4. Copy `.env-example` to `.env` and add your credentials
+4. Run the following command to generate a config file:
 
 ```bash
-cp .env.example .env
+cp config-example.toml config.toml
 ```
 
-Then fill in these values:
-
-```
-STRAVA_CLIENT_ID=your_client_id
-STRAVA_CLIENT_SECRET=your_client_secret
-STRAVA_REFRESH_TOKEN=your_refresh_token
-```
+Then fill in the client id, client secret, and refresh token.
 
 ### 4. Grant `read_all` permission
 
@@ -60,24 +52,15 @@ chmod +x token.sh
 
 3. After clicking "Authorize", you will be redirected to an error page. Copy the value from the `code=` query parameter of the URL in the browser
 
-4. Paste the value into your terminal. Copy the newly generated refresh token and replace the value in your `.env` file.
+4. Paste the value into your terminal. Copy the newly generated refresh token and replace the value in your `config.toml` file.
 
 ## Usage
 
 ```bash
-usage: main.py [-h] [-c COLOR] [-f] [-d]
-
-Strava Frame
-
-options:
-  -h, --help            show this help message and exit
-  -c COLOR, --color COLOR
-                        set accent color (must be hexadecimal color value ex: FC4C02)
-  -f, --fullscreen      run in fullscreen mode
-  -d, --darkmode        use dark mode
-
-Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit | r = refresh
+python3 src/main.py
 ```
+
+Press the **ESC** key to exit the application. Click the ⟳ button to refresh the data (except the streak) and click ⤢ to toggle fullscreen.
 
 ## Frame Setup
 

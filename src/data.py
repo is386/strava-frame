@@ -1,6 +1,5 @@
-import os
 import logging
-from dotenv import load_dotenv
+from config import STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REFRESH_TOKEN
 from stravalib.client import Client
 from stravalib.model import SummaryActivity
 from datetime import datetime, timedelta
@@ -16,12 +15,11 @@ streak_cache = None
 
 
 def get_strava_client() -> Client:
-    load_dotenv()
     client = Client()
     tokens = client.refresh_access_token(
-        client_id=os.getenv("STRAVA_CLIENT_ID"),
-        client_secret=os.getenv("STRAVA_CLIENT_SECRET"),
-        refresh_token=os.getenv("STRAVA_REFRESH_TOKEN"),
+        client_id=STRAVA_CLIENT_ID,
+        client_secret=STRAVA_CLIENT_SECRET,
+        refresh_token=STRAVA_REFRESH_TOKEN,
     )
     client.access_token = tokens["access_token"]
     return client

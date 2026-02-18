@@ -1,0 +1,16 @@
+[strava]
+client_id = "YOUR_CLIENT_ID"
+client_secret = "YOUR_CLIENT_SECRET"
+refresh_token = "YOUR_REFRESH_TOKEN"
+
+[display]
+accent_color = #FC4C02
+dark_mode = false
+full_screen = false
+width = 800
+height = 480
+
+[app]
+refresh_time_minutes = 15
+sleep_mode_start = 22
+sleep_mode_end = 6
