@@ -1,6 +1,7 @@
 import tkinter as tk
 from config import (
     REFRESH_TIME,
+    SLEEP_MODE_ENABLED,
     SLEEP_MODE_START,
     SLEEP_MODE_END,
     ACCENT_COLOR,
@@ -21,17 +22,17 @@ from datetime import datetime
 from PIL import ImageTk, Image
 
 
-def is_sleep_mode() -> bool:
-    hour = datetime.now().hour
-    return hour >= SLEEP_MODE_START or hour < SLEEP_MODE_END
-
-
 was_sleeping = True
 tk_root = None
 tk_label = None
 tk_photo = None
 refresh_btn = None
 fullscreen_btn = None
+
+
+def is_sleep_mode() -> bool:
+    hour = datetime.now().hour
+    return SLEEP_MODE_ENABLED and (hour >= SLEEP_MODE_START or hour < SLEEP_MODE_END)
 
 
 def toggle_fullscreen(event=None) -> None:
