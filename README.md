@@ -26,7 +26,7 @@ sudo apt install python3-tk, python3-pil.imagetk
 ### 3. Generate Strava API tokens
 
 1. Go to [Strava API Settings](https://www.strava.com/settings/api).
-2. Create a new application if you haven’t already.
+2. Create a new application. Make sure **Authorization Callback Domain** is set to `localhost`.
 3. Copy the following values for your app:
    - **Client ID**
    - **Client Secret**
