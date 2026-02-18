@@ -5,10 +5,14 @@ from stravalib.client import Client
 from stravalib.model import SummaryActivity
 from datetime import datetime, timedelta
 from typing import Tuple
+from requests.exceptions import RequestException
 
 logging.getLogger("stravalib").setLevel(logging.ERROR)
 
 METERS_PER_MILE = 1609.344
+
+activities_cache = []
+streak_cache = None
 
 
 def get_strava_client() -> Client:
@@ -113,4 +117,31 @@ def parse_yearly_data(
         round(total_miles, 2),
         round(total_miles / weeks_ytd, 2),
         miles_per_month,
+    )
+
+
+def refresh_streak():
+    global streak_cache
+    try:
+        streak_cache = calculate_streak(get_all_activities())
+    except (RuntimeError, RequestException) as e:
+        print(f"Failed to fetch streak: {e}")
+
+
+def refresh_activities() -> Tuple[int, float, float, list[float], dict]:
+    global activities_cache
+    try:
+        activities_cache = get_ytd_activities()
+    except (RuntimeError, RequestException) as e:
+        print(e)
+    latest_activity = parse_latest_activity(activities_cache)
+    total_activities, total_miles, avg_weekly_miles, miles_per_month = (
+        parse_yearly_data(activities_cache)
+    )
+    return (
+        total_activities,
+        total_miles,
+        avg_weekly_miles,
+        list(miles_per_month),
+        latest_activity,
     )

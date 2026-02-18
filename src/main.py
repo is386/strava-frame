@@ -1,9 +1,8 @@
 import argparse
 import tkinter as tk
 import re
-from requests.exceptions import RequestException
 from display import (
-    render,
+    generate_image,
     render_sleep_mode,
     LIGHT_ACCENT_COLOR,
     DARK_ACCENT_COLOR,
@@ -11,23 +10,23 @@ from display import (
     LIGHT_TEXT_COLOR,
     WIDTH,
     HEIGHT,
+    HEADER_HEIGHT,
 )
-from data import (
-    get_all_activities,
-    get_ytd_activities,
-    calculate_streak,
-    parse_latest_activity,
-    parse_yearly_data,
-)
-from PIL import ImageTk, Image
+import data
+from data import refresh_streak
 from datetime import datetime
+from PIL import ImageTk, Image
 
+REFRESH_TIME = 15 * 60 * 1000
 SLEEP_MODE_START = 22
 SLEEP_MODE_END = 6
-REFRESH_TIME = 15 * 60 * 1000
 
-activities_cache = []
-streak_cache = None
+
+def is_sleep_mode() -> bool:
+    hour = datetime.now().hour
+    return hour >= SLEEP_MODE_START or hour < SLEEP_MODE_END
+
+
 was_sleeping = True
 tk_root = None
 tk_label = None
@@ -69,69 +68,10 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def fetch_and_update_streak():
-    global streak_cache
-    try:
-        streak_cache = calculate_streak(get_all_activities())
-    except (RuntimeError, RequestException) as e:
-        print(f"Failed to fetch streak: {e}")
-
-
-def fetch_and_parse_activities():
-    global activities_cache
-    try:
-        activities_cache = get_ytd_activities()
-    except (RuntimeError, RequestException) as e:
-        print(e)
-    latest_activity = parse_latest_activity(activities_cache)
-    total_activities, total_miles, avg_weekly_miles, miles_per_month = (
-        parse_yearly_data(activities_cache)
-    )
-    return (
-        total_activities,
-        total_miles,
-        avg_weekly_miles,
-        list(miles_per_month),
-        latest_activity,
-    )
-
-
-def generate_image():
-    global was_sleeping
-
-    if was_sleeping:
-        was_sleeping = False
-        fetch_and_update_streak()
-
-    (
-        total_activities,
-        total_miles,
-        avg_weekly_miles,
-        miles_per_month,
-        latest_activity,
-    ) = fetch_and_parse_activities()
-
-    return render(
-        total_miles,
-        avg_weekly_miles,
-        total_activities,
-        miles_per_month,
-        latest_activity,
-        streak_cache or 0,
-        args.color,
-        args.darkmode,
-    )
-
-
 def toggle_fullscreen(event=None) -> None:
     current = tk_root.attributes("-fullscreen")
     tk_root.attributes("-fullscreen", not current)
     tk_root.after(1000, update_dashboard)
-
-
-def is_sleep_mode() -> bool:
-    hour = datetime.now().hour
-    return hour >= SLEEP_MODE_START or hour < SLEEP_MODE_END
 
 
 def update_button_position(event=None) -> None:
@@ -154,20 +94,22 @@ def update_button_position(event=None) -> None:
     scaled_width = int(WIDTH * scale)
     scaled_height = int(HEIGHT * scale)
     x_offset = (window_width - scaled_width) // 2
-    y_offset = (window_height - scaled_height + 30) // 2
+    y_offset = (window_height - scaled_height) // 2
+
+    button_y = y_offset + (HEADER_HEIGHT - button_size)
 
     refresh_btn.config(font=("Arial", font_size))
     fullscreen_btn.config(font=("Arial", font_size))
 
     refresh_btn.place(
         x=x_offset + scaled_width - button_size - margin,
-        y=y_offset + margin,
+        y=button_y,
         width=button_size,
         height=button_size,
     )
     fullscreen_btn.place(
         x=x_offset + margin,
-        y=y_offset + margin,
+        y=button_y,
         width=button_size,
         height=button_size,
     )
@@ -182,7 +124,10 @@ def update_dashboard() -> None:
         refresh_btn.place_forget()
         fullscreen_btn.place_forget()
     else:
-        img = generate_image()
+        if was_sleeping:
+            was_sleeping = False
+            refresh_streak()
+        img = generate_image(data.streak_cache or 0, args.color, args.darkmode)
         update_button_position()
 
     window_width = tk_root.winfo_width()
@@ -241,7 +186,6 @@ def run_dashboard() -> None:
         frame, text="⤢", command=toggle_fullscreen, **shared_btn_config
     )
 
-    tk_root.bind("<Configure>", update_button_position)
     tk_root.update_idletasks()
     update_dashboard()
     tk_root.mainloop()
