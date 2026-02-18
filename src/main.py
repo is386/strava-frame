@@ -11,12 +11,11 @@ from config import (
 )
 from display import (
     generate_image,
-    render_sleep_mode,
+    generate_sleep_image,
     DARK_TEXT_COLOR,
     LIGHT_TEXT_COLOR,
     HEADER_HEIGHT,
 )
-import data
 from data import refresh_streak
 from datetime import datetime
 from PIL import ImageTk, Image
@@ -87,14 +86,14 @@ def update_dashboard() -> None:
 
     if is_sleep_mode():
         was_sleeping = True
-        img = render_sleep_mode()
+        img = generate_sleep_image()
         refresh_btn.place_forget()
         fullscreen_btn.place_forget()
     else:
         if was_sleeping:
             was_sleeping = False
             refresh_streak()
-        img = generate_image(data.streak_cache or 0)
+        img = generate_image()
         update_button_position()
 
     window_width = tk_root.winfo_width()

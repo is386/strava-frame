@@ -116,7 +116,7 @@ touch ~/.config/labwc/autostart
 Add this line to the file (replace `/home/pi/path/to/your/project` with your actual project path):
 
 ```bash
-sleep 60 && python3 /home/{username}/path/to/your/project/src/main.py [args] &
+sleep 60 && python3 /home/{username}/path/to/your/project/src/main.py &
 ```
 
 **NOTE:** The `sleep` is needed otherwise the dashboard does not start in fullscreen and does not connect to wifi
