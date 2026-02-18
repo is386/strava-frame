@@ -1,30 +1,36 @@
 #!/usr/bin/env bash
-# strava_refresh_token_env_nosjq.sh
 # Usage:
-#   ./strava_refresh_token_env_nosjq.sh
-# Reads CLIENT_ID and CLIENT_SECRET from .env and prints a new refresh token.
+#   ./token.sh
+# Reads CLIENT_ID and CLIENT_SECRET from config.toml and prints a new refresh token.
 
-ENV_FILE=".env"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/config.toml"
 REDIRECT_URI="http://localhost"  # Must match what you registered on Strava
 SCOPE="read_all,activity:read_all"
 
-# Load .env
-if [ ! -f "$ENV_FILE" ]; then
-    echo "Error: $ENV_FILE not found."
+# Load values from config.toml using Python
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: config.toml not found at $CONFIG_FILE"
     exit 1
 fi
 
-export $(grep -v '^#' "$ENV_FILE" | xargs)
+read -r STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET <<< $(python3 - <<EOF
+import tomllib
+with open("$CONFIG_FILE", "rb") as f:
+    config = tomllib.load(f)
+print(config["strava"]["client_id"], config["strava"]["client_secret"])
+EOF
+)
 
 if [ -z "$STRAVA_CLIENT_ID" ] || [ -z "$STRAVA_CLIENT_SECRET" ]; then
-    echo "Error: STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET must be set in $ENV_FILE"
+    echo "Error: client_id and client_secret must be set in config.toml"
     exit 1
 fi
 
 echo "Open this URL in your browser and approve access:"
 echo "https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&approval_prompt=force&scope=${SCOPE}"
 echo
-read -p "After approving, copy the 'code=' value from the redirect URL in the browser: " CODE
+read -p "After approving, copy the 'code=' value from the redirect URL in the browser and paste it here: " CODE
 
 # Exchange code for access/refresh token
 RESPONSE=$(curl -s -X POST https://www.strava.com/oauth/token \
@@ -37,5 +43,5 @@ RESPONSE=$(curl -s -X POST https://www.strava.com/oauth/token \
 REFRESH_TOKEN=$(echo "$RESPONSE" | grep -o '"refresh_token":"[^"]*"' | sed 's/"refresh_token":"\(.*\)"/\1/')
 
 echo
-echo "Copy this refresh token and replace the value in your .env file:"
+echo "Copy this refresh token and replace the value in your config.toml file:"
 echo "$REFRESH_TOKEN"
