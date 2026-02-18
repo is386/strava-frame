@@ -4,7 +4,7 @@ client_secret = "YOUR_CLIENT_SECRET"
 refresh_token = "YOUR_REFRESH_TOKEN"
 
 [display]
-accent_color = #FC4C02
+accent_color = "#FC4C02"
 dark_mode = false
 full_screen = false
 width = 800
