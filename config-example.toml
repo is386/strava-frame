@@ -12,5 +12,8 @@ height = 480
 
 [app]
 refresh_time_minutes = 15
-sleep_mode_start = 22
-sleep_mode_end = 6
+
+[sleep_mode]
+enabled = false
+start_hour = 22
+end_hour = 8
