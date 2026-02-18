@@ -1,5 +1,7 @@
 import os
-from config import WIDTH, HEIGHT, ACCENT_COLOR, DARK_MODE
+import data
+from data import refresh_activities
+from config import ACCENT_COLOR, DARK_MODE, WIDTH, HEIGHT
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 from PIL.Image import Image as PILImage
@@ -388,9 +390,7 @@ def render(
     return img
 
 
-def generate_image(streak: int) -> PILImage:
-    from data import refresh_activities
-
+def generate_image() -> PILImage:
     (
         total_activities,
         total_miles,
@@ -404,9 +404,9 @@ def generate_image(streak: int) -> PILImage:
         total_activities,
         miles_per_month,
         latest_activity,
-        streak,
+        data.streak_cache,
     )
 
 
-def render_sleep_mode() -> PILImage:
+def generate_sleep_image() -> PILImage:
     return Image.new("RGB", (WIDTH, HEIGHT), color="black")
