@@ -28,6 +28,7 @@ tk_label = None
 tk_photo = None
 refresh_btn = None
 fullscreen_btn = None
+loading_label = None
 
 
 def is_sleep_mode() -> bool:
@@ -108,11 +109,13 @@ def update_dashboard() -> None:
 
     tk_photo = ImageTk.PhotoImage(img)
     tk_label.config(image=tk_photo)
+    if loading_label and loading_label.winfo_ismapped():
+        loading_label.place_forget()
     tk_root.after(REFRESH_TIME, update_dashboard)
 
 
 def run_dashboard() -> None:
-    global tk_root, tk_label, refresh_btn, fullscreen_btn
+    global tk_root, tk_label, refresh_btn, fullscreen_btn, loading_label
 
     tk_root = tk.Tk()
     tk_root.title("")
@@ -129,12 +132,19 @@ def run_dashboard() -> None:
     tk_label = tk.Label(frame)
     tk_label.pack(expand=True)
 
-    fg_color = LIGHT_TEXT_COLOR if DARK_MODE else DARK_TEXT_COLOR
+    loading_label = tk.Label(
+        frame,
+        text="Loading...",
+        font=("Arial", 48),
+        bg=tk_root.cget("bg"),
+        fg="#000000",
+    )
+    loading_label.place(relx=0.5, rely=0.5, anchor="center")
 
     shared_btn_config = dict(
         font=("Arial", 20),
         bg=ACCENT_COLOR,
-        fg=fg_color,
+        fg=LIGHT_TEXT_COLOR if DARK_MODE else DARK_TEXT_COLOR,
         borderwidth=0,
         relief="flat",
         padx=0,
