@@ -36,9 +36,22 @@ def is_sleep_mode() -> bool:
     return SLEEP_MODE_ENABLED and (hour >= SLEEP_MODE_START or hour < SLEEP_MODE_END)
 
 
+def show_loading() -> None:
+    tk_label.config(image="")
+    refresh_btn.place_forget()
+    fullscreen_btn.place_forget()
+    loading_label.place(relx=0.5, rely=0.5, anchor="center")
+    tk_root.update_idletasks()
+
+
 def toggle_fullscreen(event=None) -> None:
     current = tk_root.attributes("-fullscreen")
     tk_root.attributes("-fullscreen", not current)
+    refresh_dashboard()
+
+
+def refresh_dashboard() -> None:
+    show_loading()
     tk_root.after(1000, update_dashboard)
 
 
@@ -53,18 +66,18 @@ def update_button_position(event=None) -> None:
         tk_root.after(100, update_button_position)
         return
 
-    scale = min(window_width / WIDTH, window_height / HEIGHT)
-
-    button_size = int(40 * scale)
-    font_size = max(12, int(20 * scale))
-    margin = int(10 * scale)
-
-    scaled_width = int(WIDTH * scale)
-    scaled_height = int(HEIGHT * scale)
+    win_scale = min(window_width / WIDTH, window_height / HEIGHT)
+    scaled_width = int(WIDTH * win_scale)
+    scaled_height = int(HEIGHT * win_scale)
     x_offset = (window_width - scaled_width) // 2
     y_offset = (window_height - scaled_height) // 2
 
-    button_y = y_offset + (HEADER_HEIGHT - button_size)
+    scaled_header = int(HEADER_HEIGHT * win_scale)
+    button_size = int(scaled_header * 0.55)
+    margin = max(6, int(scaled_header * 0.13))
+    font_size = max(10, int(button_size * 0.5))
+
+    button_y = y_offset + scaled_header - button_size
 
     refresh_btn.config(font=("Arial", font_size))
     fullscreen_btn.config(font=("Arial", font_size))
@@ -152,7 +165,7 @@ def run_dashboard() -> None:
         highlightthickness=0,
     )
     refresh_btn = tk.Button(
-        frame, text="⟳", command=update_dashboard, **shared_btn_config
+        frame, text="⟳", command=refresh_dashboard, **shared_btn_config
     )
     fullscreen_btn = tk.Button(
         frame, text="⤢", command=toggle_fullscreen, **shared_btn_config
