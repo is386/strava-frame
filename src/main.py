@@ -13,8 +13,8 @@ from display import (
     HEIGHT,
 )
 from data import (
-    get_yearly_strava_activities,
-    get_all_strava_activities,
+    get_all_activities,
+    get_ytd_activities,
     calculate_streak,
     parse_latest_activity,
     parse_yearly_data,
@@ -38,18 +38,15 @@ fullscreen_btn = None
 
 def hex_color(value):
     value = value.lstrip("#")
-
     if not re.match(r"^[0-9A-Fa-f]{6}$|^[0-9A-Fa-f]{3}$", value):
         raise argparse.ArgumentTypeError(f"{value} is not a valid hex color")
-
     return f"#{value}"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Strava Frame",
-        epilog="Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit"
-        + " | r = refresh",
+        epilog="Keyboard shortcuts: F11 = toggle fullscreen | Escape = quit | r = refresh",
     )
     parser.add_argument(
         "-c",
@@ -75,8 +72,7 @@ def parse_args() -> argparse.Namespace:
 def fetch_and_update_streak():
     global streak_cache
     try:
-        all_activities = get_all_strava_activities()
-        streak_cache = calculate_streak(all_activities)
+        streak_cache = calculate_streak(get_all_activities())
     except (RuntimeError, RequestException) as e:
         print(f"Failed to fetch streak: {e}")
 
@@ -84,20 +80,18 @@ def fetch_and_update_streak():
 def fetch_and_parse_activities():
     global activities_cache
     try:
-        activities = get_yearly_strava_activities()
-        activities_cache = activities
+        activities_cache = get_ytd_activities()
     except (RuntimeError, RequestException) as e:
         print(e)
-        activities = activities_cache
-    latest_activity = parse_latest_activity(activities)
-    total_activities, total_mileage, avg_weekly_mileage, mileage_per_month = (
-        parse_yearly_data(activities)
+    latest_activity = parse_latest_activity(activities_cache)
+    total_activities, total_miles, avg_weekly_miles, miles_per_month = (
+        parse_yearly_data(activities_cache)
     )
     return (
         total_activities,
-        total_mileage,
-        avg_weekly_mileage,
-        list(mileage_per_month),
+        total_miles,
+        avg_weekly_miles,
+        list(miles_per_month),
         latest_activity,
     )
 
@@ -105,51 +99,42 @@ def fetch_and_parse_activities():
 def generate_image():
     global was_sleeping
 
-    # We generate the streak once a day for performance and rate limiting reasons
-    # So it generates the streak right after it wakes up from sleep mode
     if was_sleeping:
         was_sleeping = False
         fetch_and_update_streak()
 
     (
         total_activities,
-        total_mileage,
-        avg_weekly_mileage,
-        mileage_per_month,
+        total_miles,
+        avg_weekly_miles,
+        miles_per_month,
         latest_activity,
     ) = fetch_and_parse_activities()
 
-    img = render(
-        total_mileage,
-        avg_weekly_mileage,
+    return render(
+        total_miles,
+        avg_weekly_miles,
         total_activities,
-        mileage_per_month,
+        miles_per_month,
         latest_activity,
         streak_cache or 0,
         args.color,
         args.darkmode,
     )
 
-    return img
-
 
 def toggle_fullscreen(event=None) -> None:
-    global tk_root
     current = tk_root.attributes("-fullscreen")
     tk_root.attributes("-fullscreen", not current)
-    # My RPI is super slow, so I have to add this delay here or else the update code
-    # uses the old width and height when re-rendering
     tk_root.after(1000, update_dashboard)
 
 
 def is_sleep_mode() -> bool:
-    now = datetime.now()
-    return now.hour >= SLEEP_MODE_START or now.hour < SLEEP_MODE_END
+    hour = datetime.now().hour
+    return hour >= SLEEP_MODE_START or hour < SLEEP_MODE_END
 
 
 def update_button_position(event=None) -> None:
-    global tk_root, refresh_btn, fullscreen_btn
-
     if is_sleep_mode():
         return
 
@@ -160,33 +145,26 @@ def update_button_position(event=None) -> None:
         tk_root.after(100, update_button_position)
         return
 
-    img_width, img_height = WIDTH, HEIGHT
-
-    scale_w = window_width / img_width
-    scale_h = window_height / img_height
-    scale = min(scale_w, scale_h)
+    scale = min(window_width / WIDTH, window_height / HEIGHT)
 
     button_size = int(40 * scale)
     font_size = max(12, int(20 * scale))
-
     margin = int(10 * scale)
 
-    scaled_img_width = int(img_width * scale)
-    scaled_img_height = int(img_height * scale)
-
-    x_offset = (window_width - scaled_img_width) // 2
-    y_offset = (window_height - scaled_img_height + 30) // 2
+    scaled_width = int(WIDTH * scale)
+    scaled_height = int(HEIGHT * scale)
+    x_offset = (window_width - scaled_width) // 2
+    y_offset = (window_height - scaled_height + 30) // 2
 
     refresh_btn.config(font=("Arial", font_size))
     fullscreen_btn.config(font=("Arial", font_size))
 
     refresh_btn.place(
-        x=x_offset + scaled_img_width - button_size - margin,
+        x=x_offset + scaled_width - button_size - margin,
         y=y_offset + margin,
         width=button_size,
         height=button_size,
     )
-
     fullscreen_btn.place(
         x=x_offset + margin,
         y=y_offset + margin,
@@ -196,7 +174,7 @@ def update_button_position(event=None) -> None:
 
 
 def update_dashboard() -> None:
-    global tk_root, tk_label, tk_photo, refresh_btn, fullscreen_btn, was_sleeping
+    global tk_photo, was_sleeping
 
     if is_sleep_mode():
         was_sleeping = True
@@ -211,14 +189,10 @@ def update_dashboard() -> None:
     window_height = tk_root.winfo_height()
 
     if window_width > 1 and window_height > 1:
-        img_width, img_height = img.size
-        scale_w = window_width / img_width
-        scale_h = window_height / img_height
-        scale = min(scale_w, scale_h)
-
-        new_width = int(img_width * scale)
-        new_height = int(img_height * scale)
-        img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        scale = min(window_width / img.width, window_height / img.height)
+        img = img.resize(
+            (int(img.width * scale), int(img.height * scale)), Image.Resampling.LANCZOS
+        )
 
     tk_photo = ImageTk.PhotoImage(img)
     tk_label.config(image=tk_photo)
@@ -227,11 +201,10 @@ def update_dashboard() -> None:
 
 def run_dashboard() -> None:
     global tk_root, tk_label, refresh_btn, fullscreen_btn
+
     tk_root = tk.Tk()
     tk_root.title("")
-
     tk_root.geometry(f"{WIDTH}x{HEIGHT}")
-
     tk_root.resizable(False, False)
     tk_root.attributes("-fullscreen", args.fullscreen)
     tk_root.config(cursor="none")
@@ -246,17 +219,12 @@ def run_dashboard() -> None:
     tk_label = tk.Label(frame)
     tk_label.pack(expand=True)
 
-    if args.color is not None:
-        btn_color = args.color
-    else:
-        btn_color = DARK_ACCENT_COLOR if args.darkmode else LIGHT_ACCENT_COLOR
+    btn_color = args.color or (
+        DARK_ACCENT_COLOR if args.darkmode else LIGHT_ACCENT_COLOR
+    )
+    fg_color = LIGHT_TEXT_COLOR if args.darkmode else DARK_TEXT_COLOR
 
-    fg_color = DARK_TEXT_COLOR if not args.darkmode else LIGHT_TEXT_COLOR
-
-    refresh_btn = tk.Button(
-        frame,
-        text="⟳",
-        command=update_dashboard,
+    shared_btn_config = dict(
         font=("Arial", 20),
         bg=btn_color,
         fg=fg_color,
@@ -266,26 +234,16 @@ def run_dashboard() -> None:
         pady=0,
         highlightthickness=0,
     )
+    refresh_btn = tk.Button(
+        frame, text="⟳", command=update_dashboard, **shared_btn_config
+    )
     fullscreen_btn = tk.Button(
-        frame,
-        text="⤢",
-        command=toggle_fullscreen,
-        font=("Arial", 20),
-        bg=btn_color,
-        fg=fg_color,
-        borderwidth=0,
-        relief="flat",
-        padx=0,
-        pady=0,
-        highlightthickness=0,
+        frame, text="⤢", command=toggle_fullscreen, **shared_btn_config
     )
 
     tk_root.bind("<Configure>", update_button_position)
-
     tk_root.update_idletasks()
-
     update_dashboard()
-
     tk_root.mainloop()
 
 
