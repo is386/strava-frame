@@ -30,6 +30,7 @@ fullscreen_btn = None
 loading_label = None
 current_width = WIDTH
 current_height = HEIGHT
+last_streak_date = None
 
 
 def is_sleep_mode() -> bool:
@@ -45,26 +46,22 @@ def show_loading() -> None:
     tk_root.update_idletasks()
 
 
-def _read_window_dimensions() -> tuple[int, int]:
-    """Return the actual current window dimensions from tkinter."""
+def read_window_dimensions() -> tuple[int, int]:
     tk_root.update_idletasks()
     return tk_root.winfo_width(), tk_root.winfo_height()
 
 
 def toggle_fullscreen(event=None) -> None:
-    global current_width, current_height
-
     is_fullscreen = not tk_root.attributes("-fullscreen")
     tk_root.attributes("-fullscreen", is_fullscreen)
+    show_loading()
+    tk_root.after(1000, on_resize_settled)
 
-    tk_root.after(100, _on_resize_settled)
 
-
-def _on_resize_settled() -> None:
-    """Called after a short delay so the WM has finished resizing the window."""
+def on_resize_settled() -> None:
     global current_width, current_height
-    current_width, current_height = _read_window_dimensions()
-    refresh_dashboard()
+    current_width, current_height = read_window_dimensions()
+    tk_root.after(1000, update_dashboard)
 
 
 def refresh_dashboard() -> None:
@@ -99,6 +96,15 @@ def update_button_position() -> None:
     )
 
 
+def midnight_streak_check() -> None:
+    global last_streak_date
+    today = datetime.now().date()
+    if last_streak_date != today:
+        last_streak_date = today
+        refresh_streak()
+    tk_root.after(60_000, midnight_streak_check)
+
+
 def update_dashboard() -> None:
     global tk_photo, was_sleeping
 
@@ -108,9 +114,7 @@ def update_dashboard() -> None:
         refresh_btn.place_forget()
         fullscreen_btn.place_forget()
     else:
-        if was_sleeping:
-            was_sleeping = False
-            refresh_streak()
+        was_sleeping = False
         img = generate_image(current_width, current_height)
         update_button_position()
 
@@ -123,7 +127,7 @@ def update_dashboard() -> None:
 
 def run_dashboard() -> None:
     global tk_root, tk_label, refresh_btn, fullscreen_btn, loading_label
-    global current_width, current_height
+    global current_width, current_height, last_streak_date
 
     tk_root = tk.Tk()
     tk_root.title("")
@@ -167,8 +171,11 @@ def run_dashboard() -> None:
     )
 
     tk_root.update_idletasks()
-    current_width, current_height = _read_window_dimensions()
+    current_width, current_height = read_window_dimensions()
 
+    refresh_streak()
+    last_streak_date = datetime.now().date()
+    tk_root.after(60_000, midnight_streak_check)
     update_dashboard()
     tk_root.mainloop()
 
