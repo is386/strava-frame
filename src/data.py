@@ -11,7 +11,7 @@ logging.getLogger("stravalib").setLevel(logging.ERROR)
 METERS_PER_MILE = 1609.344
 
 activities_cache = []
-streak_cache = None
+streak_cache = -1
 
 
 def get_strava_client() -> Client:
