@@ -10,17 +10,16 @@ from config import (
     DARK_MODE,
     FULL_SCREEN,
 )
-from display import (
+from render import (
     generate_image,
     generate_sleep_image,
+    Renderer,
     DARK_TEXT_COLOR,
     LIGHT_TEXT_COLOR,
-    HEADER_HEIGHT,
 )
 from data import refresh_streak
 from datetime import datetime
-from PIL import ImageTk, Image
-
+from PIL import ImageTk
 
 was_sleeping = True
 tk_root = None
@@ -29,6 +28,8 @@ tk_photo = None
 refresh_btn = None
 fullscreen_btn = None
 loading_label = None
+current_width = WIDTH
+current_height = HEIGHT
 
 
 def is_sleep_mode() -> bool:
@@ -44,9 +45,25 @@ def show_loading() -> None:
     tk_root.update_idletasks()
 
 
+def _read_window_dimensions() -> tuple[int, int]:
+    """Return the actual current window dimensions from tkinter."""
+    tk_root.update_idletasks()
+    return tk_root.winfo_width(), tk_root.winfo_height()
+
+
 def toggle_fullscreen(event=None) -> None:
-    current = tk_root.attributes("-fullscreen")
-    tk_root.attributes("-fullscreen", not current)
+    global current_width, current_height
+
+    is_fullscreen = not tk_root.attributes("-fullscreen")
+    tk_root.attributes("-fullscreen", is_fullscreen)
+
+    tk_root.after(100, _on_resize_settled)
+
+
+def _on_resize_settled() -> None:
+    """Called after a short delay so the WM has finished resizing the window."""
+    global current_width, current_height
+    current_width, current_height = _read_window_dimensions()
     refresh_dashboard()
 
 
@@ -55,41 +72,27 @@ def refresh_dashboard() -> None:
     tk_root.after(1000, update_dashboard)
 
 
-def update_button_position(event=None) -> None:
+def update_button_position() -> None:
     if is_sleep_mode():
         return
 
-    window_width = tk_root.winfo_width()
-    window_height = tk_root.winfo_height()
-
-    if window_width <= 1 or window_height <= 1:
-        tk_root.after(100, update_button_position)
-        return
-
-    win_scale = min(window_width / WIDTH, window_height / HEIGHT)
-    scaled_width = int(WIDTH * win_scale)
-    scaled_height = int(HEIGHT * win_scale)
-    x_offset = (window_width - scaled_width) // 2
-    y_offset = (window_height - scaled_height) // 2
-
-    scaled_header = int(HEADER_HEIGHT * win_scale)
-    button_size = int(scaled_header * 0.55)
-    margin = max(6, int(scaled_header * 0.13))
+    header = Renderer(current_width, current_height).header_height
+    button_size = int(header * 0.55)
+    margin = max(6, int(header * 0.13))
     font_size = max(10, int(button_size * 0.5))
-
-    button_y = y_offset + scaled_header - button_size
+    button_y = header - button_size
 
     refresh_btn.config(font=("Arial", font_size))
     fullscreen_btn.config(font=("Arial", font_size))
 
     refresh_btn.place(
-        x=x_offset + scaled_width - button_size - margin,
+        x=current_width - button_size - margin,
         y=button_y,
         width=button_size,
         height=button_size,
     )
     fullscreen_btn.place(
-        x=x_offset + margin,
+        x=margin,
         y=button_y,
         width=button_size,
         height=button_size,
@@ -101,24 +104,15 @@ def update_dashboard() -> None:
 
     if is_sleep_mode():
         was_sleeping = True
-        img = generate_sleep_image()
+        img = generate_sleep_image(current_width, current_height)
         refresh_btn.place_forget()
         fullscreen_btn.place_forget()
     else:
         if was_sleeping:
             was_sleeping = False
             refresh_streak()
-        img = generate_image()
+        img = generate_image(current_width, current_height)
         update_button_position()
-
-    window_width = tk_root.winfo_width()
-    window_height = tk_root.winfo_height()
-
-    if window_width > 1 and window_height > 1:
-        scale = min(window_width / img.width, window_height / img.height)
-        img = img.resize(
-            (int(img.width * scale), int(img.height * scale)), Image.Resampling.LANCZOS
-        )
 
     tk_photo = ImageTk.PhotoImage(img)
     tk_label.config(image=tk_photo)
@@ -129,6 +123,7 @@ def update_dashboard() -> None:
 
 def run_dashboard() -> None:
     global tk_root, tk_label, refresh_btn, fullscreen_btn, loading_label
+    global current_width, current_height
 
     tk_root = tk.Tk()
     tk_root.title("")
@@ -172,6 +167,8 @@ def run_dashboard() -> None:
     )
 
     tk_root.update_idletasks()
+    current_width, current_height = _read_window_dimensions()
+
     update_dashboard()
     tk_root.mainloop()
 
