@@ -96,7 +96,7 @@ Right click the task bar and then go to Panel Settings -> Notifications and turn
 Either follow the steps below to make an autoscript or just have a bash script on the desktop that starts the code. Personally, I have both and its convenient with the touchscreen. For the Desktop script, just make sure to save the file with extension `.sh`. It'll then prompt you to execute the script.
 
 ```
-python3 /home/{username}/path/to/your/project/src/main.py [args] &
+python3 /home/{username}/path/to/your/project/src/main.py &
 ```
 
 ## Setting Up Autostart on Raspbian (Labwc)
@@ -132,10 +132,3 @@ chmod +x ~/.config/labwc/autostart
 ```bash
 sudo reboot
 ```
-
-### 7. Troubleshooting
-
-If the dashboard doesn't start in fullscreen:
-
-- Press **F11** or the fullscreen button to toggle fullscreen mode
-- If it doesn't start at all, increase the sleep delay
