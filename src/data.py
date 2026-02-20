@@ -1,6 +1,8 @@
 import logging
 from config import STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REFRESH_TOKEN
-from stravalib.client import Client
+from stravalib.client import Client 
+from stravalib.exc import RateLimitExceeded
+
 from stravalib.model import SummaryActivity
 from datetime import datetime, timedelta
 from typing import Tuple
@@ -38,7 +40,10 @@ def seconds_to_timestamp(seconds: int) -> str:
 
 
 def calculate_pace(meters: float, seconds: int) -> int:
-    seconds_per_mile = seconds / meters_to_miles(meters)
+    miles = meters_to_miles(meters)
+    if miles == 0:
+        return 0
+    seconds_per_mile = seconds / miles
     return round(seconds_per_mile)
 
 
@@ -47,12 +52,13 @@ def calculate_streak(activities: list[SummaryActivity]) -> int:
         return 0
 
     def week_start(date: datetime) -> datetime:
-        date = date.replace(tzinfo=None)
+        if date.tzinfo is not None:
+            date = date.replace(tzinfo=None)
         return (date - timedelta(days=date.weekday())).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
 
-    active_weeks = set(week_start(a.start_date) for a in activities)
+    active_weeks = set(week_start(a.start_date_local) for a in activities)
     current_week = week_start(datetime.now())
 
     if current_week not in active_weeks:
@@ -85,14 +91,14 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
         }
 
     activity = activities[-1]
+    miles = meters_to_miles(activity.distance)
+    pace = calculate_pace(activity.distance, activity.moving_time)
     return {
-        "miles": round(meters_to_miles(activity.distance), 2),
+        "miles": round(miles, 2),
         "time": seconds_to_timestamp(activity.moving_time),
-        "pace": seconds_to_timestamp(
-            calculate_pace(activity.distance, activity.moving_time)
-        ),
+        "pace": seconds_to_timestamp(pace) if pace > 0 else "--:--",
         "title": activity.name,
-        "date": activity.start_date.strftime("%B %-d"),
+        "date": activity.start_date_local.strftime("%B %-d"),
     }
 
 
@@ -105,10 +111,10 @@ def parse_yearly_data(
     for activity in activities:
         miles = meters_to_miles(activity.distance)
         total_miles += miles
-        miles_per_month[activity.start_date.month - 1] += miles
+        miles_per_month[activity.start_date_local.month - 1] += miles
 
     miles_per_month = [round(m, 2) for m in miles_per_month]
-    weeks_ytd = datetime.now().isocalendar().week
+    weeks_ytd = max(1, datetime.now().isocalendar().week)
 
     return (
         len(activities),
