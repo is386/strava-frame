@@ -37,9 +37,6 @@ DARK_LABEL_COLOR = "#999999"
 DARK_CARD_COLOR = "#2B2B2B"
 DARK_BORDER_COLOR = "#404040"
 
-DARK_TEXT_COLOR_EXPORT = DARK_TEXT_COLOR
-LIGHT_TEXT_COLOR_EXPORT = LIGHT_TEXT_COLOR
-
 
 class Renderer:
     BASE_WIDTH = 800
@@ -325,16 +322,20 @@ class Renderer:
         area_w = area_x1 - area_x0
 
         fire_raw = Image.open(os.path.join(ASSETS_DIR, "fire.png")).convert("RGBA")
-        fire_colored = self._colorize_icon(fire_raw, self.accent_color)
 
         label_w, label_h = self._text_size(draw, "Weeks", self.font_bold_small)
         label_y = area_y1 - self.inner_padding - label_h
         fire_zone_h = label_y - self._sc(4) - area_y0
+        if fire_zone_h <= 0:
+            return
 
-        fire_scale = fire_zone_h / fire_colored.height
-        fire_w = int(fire_colored.width * fire_scale)
-        fire_h = int(fire_colored.height * fire_scale)
-        fire_img = fire_colored.resize((fire_w, fire_h), Image.Resampling.LANCZOS)
+        fire_scale = fire_zone_h / fire_raw.height
+        fire_w = int(fire_raw.width * fire_scale)
+        fire_h = int(fire_raw.height * fire_scale)
+        fire_img = self._colorize_icon(
+            fire_raw.resize((fire_w, fire_h), Image.Resampling.LANCZOS),
+            self.accent_color,
+        )
 
         img.paste(
             fire_img,
@@ -376,6 +377,8 @@ class Renderer:
         inner_y1 = y1 - self.inner_padding
 
         title = activity.get("title", "")
+        if len(title) > 25:
+            title = title[:25].rstrip() + "..."
         draw.text(
             (inner_x, inner_y0), title, font=self.font_bold_medium, fill=self.text_color
         )
@@ -464,8 +467,6 @@ class Renderer:
 
         return img
 
-    def render_sleep(self) -> PILImage:
-        return Image.new("RGB", (self.width, self.height), color="black")
 
 
 def generate_image(width: int, height: int) -> PILImage:
@@ -476,8 +477,8 @@ def generate_image(width: int, height: int) -> PILImage:
         miles_per_month,
         latest_activity,
     ) = refresh_activities()
-    dashboard = Renderer(width, height)
-    return dashboard.render(
+    renderer = Renderer(width, height)
+    return renderer.render(
         total_miles,
         avg_weekly_miles,
         total_activities,
@@ -488,4 +489,4 @@ def generate_image(width: int, height: int) -> PILImage:
 
 
 def generate_sleep_image(width: int, height: int) -> PILImage:
-    return Renderer(width, height).render_sleep()
+    return Image.new("RGB", (width, height), color="black")

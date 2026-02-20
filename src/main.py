@@ -21,7 +21,6 @@ from data import refresh_streak
 from datetime import datetime
 from PIL import ImageTk
 
-was_sleeping = True
 tk_root = None
 tk_label = None
 tk_photo = None
@@ -106,15 +105,13 @@ def midnight_streak_check() -> None:
 
 
 def update_dashboard() -> None:
-    global tk_photo, was_sleeping
+    global tk_photo
 
     if is_sleep_mode():
-        was_sleeping = True
         img = generate_sleep_image(current_width, current_height)
         refresh_btn.place_forget()
         fullscreen_btn.place_forget()
     else:
-        was_sleeping = False
         img = generate_image(current_width, current_height)
         update_button_position()
 

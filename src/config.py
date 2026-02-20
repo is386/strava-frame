@@ -8,7 +8,7 @@ os.environ["SILENCE_TOKEN_WARNINGS"] = "true"
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _CONFIG_PATH = os.path.join(_SCRIPT_DIR, "..", "config.toml")
 
-HEX_COLOR_RE = re.compile(r"^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 _DEFAULTS = {
     "display": {
@@ -122,13 +122,13 @@ WIDTH: int = _validate_int(
     _get(_config, "display", "width"),
     "display",
     "width",
-    min_val=_DEFAULTS["display"]["width"],
+    min_val=1,
 )
 HEIGHT: int = _validate_int(
     _get(_config, "display", "height"),
     "display",
     "height",
-    min_val=_DEFAULTS["display"]["height"],
+    min_val=1,
 )
 
 REFRESH_TIME: int = (
