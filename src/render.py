@@ -363,7 +363,12 @@ class Renderer:
         )
 
     def _draw_latest_activity(
-        self, draw: ImageDraw.Draw, activity: Dict, left_width: int, top_offset: int
+        self,
+        draw: ImageDraw.Draw,
+        img: Image.Image,
+        activity: Dict,
+        left_width: int,
+        top_offset: int,
     ):
         right_area_width = self.width - self.margin - (left_width + self.margin)
         x0 = left_width + self.margin
@@ -383,6 +388,29 @@ class Renderer:
             (inner_x, inner_y0), title, font=self.font_bold_medium, fill=self.text_color
         )
         _, title_h = self._text_size(draw, title, self.font_bold_medium)
+
+        pr = activity.get("pr")
+        if pr:
+            medal_raw = Image.open(os.path.join(ASSETS_DIR, "medal.png")).convert(
+                "RGBA"
+            )
+            medal_h = self._sc(36)
+            medal_w = int(medal_raw.width * (medal_h / medal_raw.height))
+            medal_img = medal_raw.resize((medal_w, medal_h), Image.Resampling.LANCZOS)
+            pr_w, _ = self._text_size(draw, pr, self.font_regular_small)
+            block_w = max(medal_w, pr_w)
+            block_left = x1 - self.inner_padding - block_w
+            img.paste(
+                medal_img,
+                (block_left + (block_w - medal_w) // 2, inner_y0),
+                medal_img,
+            )
+            draw.text(
+                (block_left + (block_w - pr_w) // 2, inner_y0 + medal_h),
+                pr,
+                font=self.font_regular_small,
+                fill=self.label_color,
+            )
 
         date_y = inner_y0 + title_h + self._sc(6)
         draw.text(
@@ -461,7 +489,7 @@ class Renderer:
         )
         graph_bottom = self._draw_monthly_graph(draw, mileage_per_month, left_width)
         self._draw_latest_activity(
-            draw, latest_activity, left_width, top_offset=graph_bottom
+            draw, img, latest_activity, left_width, top_offset=graph_bottom
         )
         self._draw_streak(draw, img, streak, left_width, top_offset=graph_bottom)
 
