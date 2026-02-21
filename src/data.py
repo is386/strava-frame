@@ -60,17 +60,25 @@ def calculate_pace(meters: float, seconds: int) -> int:
     seconds_per_mile = seconds / miles
     return round(seconds_per_mile)
 
+def week_start(date: datetime) -> datetime:
+    if date.tzinfo is not None:
+        date = date.replace(tzinfo=None)
+    return (date - timedelta(days=date.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+
+
+def streak_cache_is_stale() -> bool:
+    date = latest_activity_cache.get("date")
+    if date is None:
+        return False
+    previous_week = week_start(datetime.now()) - timedelta(weeks=1)
+    return week_start(date) < previous_week
+
 
 def calculate_streak(activities: list[SummaryActivity]) -> int:
     if not activities:
         return 0
-
-    def week_start(date: datetime) -> datetime:
-        if date.tzinfo is not None:
-            date = date.replace(tzinfo=None)
-        return (date - timedelta(days=date.weekday())).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
 
     active_weeks = set(week_start(a.start_date_local) for a in activities)
     current_week = week_start(datetime.now())
@@ -124,8 +132,8 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
             "miles": 0,
             "time": "00:00",
             "pace": "00:00",
-            "title": "Error",
-            "date": "Zerouary 0",
+            "title": "No Activity",
+            "date": datetime.now(),
             "medal": None,
         }
         return latest_activity_cache
@@ -147,7 +155,7 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
         "time": seconds_to_timestamp(moving_time),
         "pace": seconds_to_timestamp(pace) if pace > 0 else "00:00",
         "title": activity.name,
-        "date": activity.start_date_local.strftime("%B %-d"),
+        "date": activity.start_date_local,
         "pr": get_pr(activity),
     }
     return latest_activity_cache
@@ -194,6 +202,8 @@ def refresh_activities() -> Tuple[int, float, float, list[float], dict, int]:
             streak_cache = calculate_streak(get_all_activities())
         except (RuntimeError, RequestException) as e:
             print(e)
+    elif streak_cache_is_stale():
+        streak_cache = 0
 
     return (
         total_activities,
