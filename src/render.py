@@ -414,7 +414,7 @@ class Renderer:
         date_y = inner_y0 + title_h + self._sc(6)
         draw.text(
             (inner_x, date_y + self._sc(5)),
-            activity.get("date", ""),
+            activity.get("date").strftime("%B %-d"),
             font=self.font_regular_small,
             fill=self.label_color,
         )
