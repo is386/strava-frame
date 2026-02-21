@@ -1,4 +1,7 @@
 import tkinter as tk
+import traceback
+import sys
+from pathlib import Path
 from config import (
     REFRESH_TIME,
     SLEEP_MODE_ENABLED,
@@ -74,7 +77,6 @@ def update_button_position() -> None:
     font_size = max(10, int(button_size * 0.5))
     button_y = header - button_size
 
-    exit_btn.config(font=("Arial", font_size), bg="#000000")
     exit_btn.place(
         x=current_width - button_size,
         y=button_y,
@@ -83,6 +85,9 @@ def update_button_position() -> None:
     )
 
     if is_sleep_mode():
+        exit_btn.config(font=("Arial", font_size), bg="#000000")
+        refresh_btn.place_forget()
+        fullscreen_btn.place_forget()
         return
 
     exit_btn.config(font=("Arial", font_size), bg=ACCENT_COLOR)
@@ -108,12 +113,10 @@ def update_dashboard() -> None:
 
     if is_sleep_mode():
         img = generate_sleep_image(current_width, current_height)
-        refresh_btn.place_forget()
-        fullscreen_btn.place_forget()
     else:
         img = generate_image(current_width, current_height)
-        update_button_position()
 
+    update_button_position()
     tk_photo = ImageTk.PhotoImage(img)
     tk_label.config(image=tk_photo)
     if loading_label and loading_label.winfo_ismapped():
@@ -121,11 +124,28 @@ def update_dashboard() -> None:
     tk_root.after(REFRESH_TIME, update_dashboard)
 
 
+def handle_exception(exc_type, exc_value, exc_traceback):
+    error_message = "".join(
+        traceback.format_exception(exc_type, exc_value, exc_traceback)
+    )
+    print(error_message, file=sys.stderr)
+
+    logs_dir = Path(__file__).parent.parent / "logs"
+    logs_dir.mkdir(exist_ok=True)
+    log_filename = logs_dir / f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+    with open(log_filename, "w") as f:
+        f.write(error_message)
+
+    sys.exit(1)
+
+
 def run_dashboard() -> None:
     global tk_root, tk_label, refresh_btn, fullscreen_btn, exit_btn, loading_label
     global current_width, current_height
 
     tk_root = tk.Tk()
+    tk_root.report_callback_exception = handle_exception
+
     tk_root.title("")
     tk_root.geometry(f"{WIDTH}x{HEIGHT}")
     tk_root.resizable(False, False)
@@ -173,4 +193,8 @@ def run_dashboard() -> None:
     tk_root.mainloop()
 
 
-run_dashboard()
+if __name__ == "__main__":
+    try:
+        run_dashboard()
+    except Exception:
+        handle_exception(*sys.exc_info())
