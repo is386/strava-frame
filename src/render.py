@@ -1,10 +1,9 @@
 import os
-from data import refresh_activities
+from data import LatestActivity, refresh_activities
 from config import ACCENT_COLOR, DARK_MODE
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 from PIL.Image import Image as PILImage
-from typing import List, Dict
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(SCRIPT_DIR, "..", "assets")
@@ -65,7 +64,7 @@ class Renderer:
         self.inner_padding = self._sc(12)
         self.card_spacing = self._sc(15)
         self.title_bottom_padding = self._sc(14)
-        self.bar_label_threshold = self._sc(25)
+        self.bar_label_threshold = self._sc(10)
 
         if dark_mode:
             self.bg_color = DARK_BG_COLOR
@@ -228,7 +227,7 @@ class Renderer:
         return left_width
 
     def _draw_monthly_graph(
-        self, draw: ImageDraw.Draw, mileage_per_month: List[float], left_width: int
+        self, draw: ImageDraw.Draw, mileage_per_month: list[float], left_width: int
     ) -> int:
         x0 = left_width + self.margin
         y0 = self.header_height + self.margin
@@ -276,7 +275,7 @@ class Renderer:
                 val_x = bx0 + (bar_width - val_w) // 2
                 if bar_h > self.bar_label_threshold:
                     draw.text(
-                        (val_x, bar_top + self._sc(4)),
+                        (val_x, bar_top),
                         val_text,
                         font=self.font_bold_small,
                         fill=self.bg_color,
@@ -322,7 +321,8 @@ class Renderer:
 
         fire_raw = Image.open(os.path.join(ASSETS_DIR, "fire.png")).convert("RGBA")
 
-        label_w, label_h = self._text_size(draw, "Weeks", self.font_bold_small)
+        weeks_text = "Weeks" if streak != 1 else "Week"
+        label_w, label_h = self._text_size(draw, weeks_text, self.font_bold_small)
         label_y = area_y1 - self.inner_padding - label_h
         fire_zone_h = label_y - self._sc(4) - area_y0
         if fire_zone_h <= 0:
@@ -365,7 +365,7 @@ class Renderer:
         self,
         draw: ImageDraw.Draw,
         img: Image.Image,
-        activity: Dict,
+        activity: LatestActivity,
         left_width: int,
         top_offset: int,
     ):
@@ -475,8 +475,8 @@ class Renderer:
         total_mileage: float,
         weekly_mileage: float,
         activities: int,
-        mileage_per_month: List[float],
-        latest_activity: Dict,
+        mileage_per_month: list[float],
+        latest_activity: LatestActivity,
         streak: int = 0,
     ) -> PILImage:
         img = Image.new("RGB", (self.width, self.height), self.bg_color)
@@ -502,7 +502,7 @@ def generate_image(width: int, height: int) -> PILImage:
         avg_weekly_miles,
         miles_per_month,
         latest_activity,
-        streak
+        streak,
     ) = refresh_activities()
     renderer = Renderer(width, height)
     return renderer.render(

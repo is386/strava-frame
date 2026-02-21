@@ -71,13 +71,12 @@ def refresh_dashboard() -> None:
 def update_button_position() -> None:
     header = Renderer(current_width, current_height).header_height
     button_size = int(header * 0.55)
-    margin = max(6, int(header * 0.13))
     font_size = max(10, int(button_size * 0.5))
     button_y = header - button_size
 
     exit_btn.config(font=("Arial", font_size), bg="#000000")
     exit_btn.place(
-        x=current_width - button_size - margin,
+        x=current_width - button_size,
         y=button_y,
         width=button_size,
         height=button_size,
@@ -91,13 +90,13 @@ def update_button_position() -> None:
     fullscreen_btn.config(font=("Arial", font_size))
 
     refresh_btn.place(
-        x=current_width - (2 * button_size) - margin,
+        x=current_width - (2 * button_size),
         y=button_y,
         width=button_size,
         height=button_size,
     )
     fullscreen_btn.place(
-        x=current_width - (3 * button_size) - margin,
+        x=current_width - (3 * button_size),
         y=button_y,
         width=button_size,
         height=button_size,
