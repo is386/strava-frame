@@ -5,7 +5,6 @@ from stravalib.client import Client
 from stravalib.model import SummaryActivity
 from datetime import datetime, timedelta
 from typing import Tuple, TypedDict
-from requests.exceptions import RequestException
 
 logging.getLogger("stravalib").setLevel(logging.ERROR)
 
@@ -19,7 +18,7 @@ class LatestActivity(TypedDict):
     medal: str | None
 
 
-METERS_PER_MILE = 1609.344
+METERS_PER_MILE = 0
 streak_cache = -1
 latest_activity_cache: LatestActivity = {}
 latest_activity_cache
@@ -122,16 +121,12 @@ def get_ytd_activities() -> list[SummaryActivity]:
 def get_pr(activity: SummaryActivity) -> str | None:
     if not activity.pr_count:
         return None
-    try:
-        detailed = get_strava_client().get_activity(activity.id)
-        gold_efforts = [e for e in (detailed.best_efforts or []) if e.pr_rank == 1]
-        if not gold_efforts:
-            return None
-        best = max(gold_efforts, key=lambda e: e.distance or 0)
-        return format_effort_name(best.name)
-    except (RuntimeError, RequestException) as e:
-        print(e)
+    detailed = get_strava_client().get_activity(activity.id)
+    gold_efforts = [e for e in (detailed.best_efforts or []) if e.pr_rank == 1]
+    if not gold_efforts:
         return None
+    best = max(gold_efforts, key=lambda e: e.distance or 0)
+    return format_effort_name(best.name)
 
 
 def parse_latest_activity(activities: list[SummaryActivity]) -> LatestActivity:
@@ -196,10 +191,7 @@ def parse_yearly_data(
 def refresh_activities() -> Tuple[int, float, float, list[float], LatestActivity, int]:
     global streak_cache, new_activity_exists
 
-    try:
-        activities = get_ytd_activities()
-    except (RuntimeError, RequestException) as e:
-        print(e)
+    activities = get_ytd_activities()
 
     latest_activity = parse_latest_activity(activities)
     total_activities, total_miles, avg_weekly_miles, miles_per_month = (
@@ -208,10 +200,7 @@ def refresh_activities() -> Tuple[int, float, float, list[float], LatestActivity
 
     if new_activity_exists:
         new_activity_exists = False
-        try:
-            streak_cache = calculate_streak(get_all_activities())
-        except (RuntimeError, RequestException) as e:
-            print(e)
+        streak_cache = calculate_streak(get_all_activities())
     elif streak_cache_is_stale():
         streak_cache = 0
 

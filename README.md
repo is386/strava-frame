@@ -60,6 +60,10 @@ chmod +x token.sh
 python3 src/main.py
 ```
 
+## Troubleshooting
+
+If the app crashes, then the error log is written to a `logs` directory in the root of the repository.
+
 ## Frame Setup
 
 ### 1. Buy the Hardware
