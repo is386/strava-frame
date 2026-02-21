@@ -377,8 +377,8 @@ class Renderer:
         inner_y1 = y1 - self.inner_padding
 
         title = activity.get("title", "")
-        if len(title) > 25:
-            title = title[:25].rstrip() + "..."
+        if len(title) > 23:
+            title = title[:23].rstrip() + "..."
         draw.text(
             (inner_x, inner_y0), title, font=self.font_bold_medium, fill=self.text_color
         )
@@ -466,7 +466,6 @@ class Renderer:
         self._draw_streak(draw, img, streak, left_width, top_offset=graph_bottom)
 
         return img
-
 
 
 def generate_image(width: int, height: int) -> PILImage:
