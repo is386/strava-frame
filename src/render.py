@@ -1,5 +1,4 @@
 import os
-import data
 from data import refresh_activities
 from config import ACCENT_COLOR, DARK_MODE
 from datetime import datetime
@@ -503,6 +502,7 @@ def generate_image(width: int, height: int) -> PILImage:
         avg_weekly_miles,
         miles_per_month,
         latest_activity,
+        streak
     ) = refresh_activities()
     renderer = Renderer(width, height)
     return renderer.render(
@@ -511,7 +511,7 @@ def generate_image(width: int, height: int) -> PILImage:
         total_activities,
         miles_per_month,
         latest_activity,
-        data.streak_cache,
+        streak,
     )
 
 
