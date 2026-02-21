@@ -1,8 +1,6 @@
 import logging
 from config import STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REFRESH_TOKEN
-from stravalib.client import Client 
-from stravalib.exc import RateLimitExceeded
-
+from stravalib.client import Client
 from stravalib.model import SummaryActivity
 from datetime import datetime, timedelta
 from typing import Tuple
@@ -91,12 +89,14 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
         }
 
     activity = activities[-1]
-    miles = meters_to_miles(activity.distance)
-    pace = calculate_pace(activity.distance, activity.moving_time)
+    distance = activity.distance or 0
+    moving_time = activity.moving_time or 0
+    miles = meters_to_miles(distance)
+    pace = calculate_pace(distance, moving_time)
     return {
         "miles": round(miles, 2),
-        "time": seconds_to_timestamp(activity.moving_time),
-        "pace": seconds_to_timestamp(pace) if pace > 0 else "--:--",
+        "time": seconds_to_timestamp(moving_time),
+        "pace": seconds_to_timestamp(pace) if pace > 0 else "00:00",
         "title": activity.name,
         "date": activity.start_date_local.strftime("%B %-d"),
     }
@@ -109,7 +109,7 @@ def parse_yearly_data(
     miles_per_month = [0.0] * 12
 
     for activity in activities:
-        miles = meters_to_miles(activity.distance)
+        miles = meters_to_miles(activity.distance or 0)
         total_miles += miles
         miles_per_month[activity.start_date_local.month - 1] += miles
 
