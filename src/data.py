@@ -9,6 +9,22 @@ from requests.exceptions import RequestException
 logging.getLogger("stravalib").setLevel(logging.ERROR)
 
 METERS_PER_MILE = 1609.344
+BEST_EFFORT_NAMES = {
+    "400m": "400m",
+    "800m": "800m",
+    "1K": "1K",
+    "1 mile": "1mi",
+    "2 mile": "2mi",
+    "5K": "5K",
+    "10K": "10K",
+    "15K": "15K",
+    "10 mile": "10mi",
+    "20K": "20K",
+    "Half-Marathon": "13.1mi",
+    "30K": "30K",
+    "Marathon": "26.2mi",
+    "50K": "50K",
+}
 
 activities_cache = []
 streak_cache = -1
@@ -78,6 +94,28 @@ def get_ytd_activities() -> list[SummaryActivity]:
     return list(get_strava_client().get_activities(after=jan_first))
 
 
+def get_pr(activity: SummaryActivity) -> str | None:
+    if not activity.pr_count:
+        return None
+    try:
+        detailed = get_strava_client().get_activity(activity.id)
+        gold_efforts = [e for e in (detailed.best_efforts or []) if e.pr_rank == 1]
+        if not gold_efforts:
+            return None
+        best = max(
+            gold_efforts,
+            key=lambda e: (
+                list(BEST_EFFORT_NAMES.keys()).index(e.name)
+                if e.name in BEST_EFFORT_NAMES.keys()
+                else -1
+            ),
+        )
+        return BEST_EFFORT_NAMES.get(best.name)
+    except (RuntimeError, RequestException) as e:
+        print(f"Failed to fetch PR data: {e}")
+        return None
+
+
 def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
     if not activities:
         return {
@@ -86,6 +124,7 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
             "pace": "00:00",
             "title": "Error",
             "date": "Zerouary 0",
+            "medal": None,
         }
 
     activity = activities[-1]
@@ -99,6 +138,7 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
         "pace": seconds_to_timestamp(pace) if pace > 0 else "00:00",
         "title": activity.name,
         "date": activity.start_date_local.strftime("%B %-d"),
+        "pr": get_pr(activity),
     }
 
 
