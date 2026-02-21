@@ -4,35 +4,45 @@ from config import STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REFRESH_TOKEN
 from stravalib.client import Client
 from stravalib.model import SummaryActivity
 from datetime import datetime, timedelta
-from typing import Tuple
+from typing import Tuple, TypedDict
 from requests.exceptions import RequestException
 
 logging.getLogger("stravalib").setLevel(logging.ERROR)
 
-METERS_PER_MILE = 1609.344
 
+class LatestActivity(TypedDict):
+    miles: float
+    time: str
+    pace: str
+    title: str
+    date: datetime
+    medal: str | None
+
+
+METERS_PER_MILE = 1609.344
 streak_cache = -1
-latest_activity_cache = {}
-new_activity_exists = False
+latest_activity_cache: LatestActivity = {}
+latest_activity_cache
+
 
 def format_effort_name(name: str) -> str:
     name = name.strip()
-    
+
     if name == "Half-Marathon":
         return "13.1mi"
     if name == "Marathon":
         return "26.2mi"
-    
+
     if re.match(r"^\d+m$", name):
         return name
-    
+
     if re.match(r"^\d+K$", name):
         return name
-    
+
     match = re.match(r"^(\d+)\s+miles?$", name, re.IGNORECASE)
     if match:
         return f"{match.group(1)}mi"
-    
+
     return name
 
 
@@ -65,6 +75,7 @@ def calculate_pace(meters: float, seconds: int) -> int:
         return 0
     seconds_per_mile = seconds / miles
     return round(seconds_per_mile)
+
 
 def week_start(date: datetime) -> datetime:
     if date.tzinfo is not None:
@@ -123,7 +134,7 @@ def get_pr(activity: SummaryActivity) -> str | None:
         return None
 
 
-def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
+def parse_latest_activity(activities: list[SummaryActivity]) -> LatestActivity:
     global new_activity_exists, latest_activity_cache
 
     if not activities:
@@ -182,7 +193,7 @@ def parse_yearly_data(
     )
 
 
-def refresh_activities() -> Tuple[int, float, float, list[float], dict, int]:
+def refresh_activities() -> Tuple[int, float, float, list[float], LatestActivity, int]:
     global streak_cache, new_activity_exists
 
     try:
@@ -210,5 +221,5 @@ def refresh_activities() -> Tuple[int, float, float, list[float], dict, int]:
         avg_weekly_miles,
         list(miles_per_month),
         latest_activity,
-        streak_cache
+        streak_cache,
     )

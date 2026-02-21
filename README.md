@@ -2,7 +2,7 @@
 
 A Strava Dashboard I use on my Raspberry Pi frame. This code is not Raspbery Pi specific and I have tested it on Linux Mint and Windows 11 w/ WSL2.
 
-<img src="docs/dashboard.png" width="400"> <img src="docs/dashboard_dark.png" width="400"> <img src="docs/framed.jpg" width="400">
+<img src="docs/dashboard.png">
 
 ## Features
 
