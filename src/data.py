@@ -18,7 +18,7 @@ class LatestActivity(TypedDict):
     medal: str | None
 
 
-METERS_PER_MILE = 0
+METERS_PER_MILE = 1609.34
 streak_cache = -1
 latest_activity_cache: LatestActivity = {}
 latest_activity_cache
