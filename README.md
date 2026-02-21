@@ -60,8 +60,6 @@ chmod +x token.sh
 python3 src/main.py
 ```
 
-Press the **ESC** key to exit the application. Click the ⟳ button to refresh the data (except the streak) and click ⤢ to toggle fullscreen.
-
 ## Frame Setup
 
 ### 1. Buy the Hardware
