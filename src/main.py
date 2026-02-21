@@ -24,6 +24,7 @@ from PIL import ImageTk
 tk_root = None
 tk_label = None
 tk_photo = None
+exit_btn = None
 refresh_btn = None
 fullscreen_btn = None
 loading_label = None
@@ -39,6 +40,7 @@ def is_sleep_mode() -> bool:
 
 def show_loading() -> None:
     tk_label.config(image="")
+    exit_btn.place_forget()
     refresh_btn.place_forget()
     fullscreen_btn.place_forget()
     loading_label.place(relx=0.5, rely=0.5, anchor="center")
@@ -69,26 +71,35 @@ def refresh_dashboard() -> None:
 
 
 def update_button_position() -> None:
-    if is_sleep_mode():
-        return
-
     header = Renderer(current_width, current_height).header_height
     button_size = int(header * 0.55)
     margin = max(6, int(header * 0.13))
     font_size = max(10, int(button_size * 0.5))
     button_y = header - button_size
 
-    refresh_btn.config(font=("Arial", font_size))
-    fullscreen_btn.config(font=("Arial", font_size))
-
-    refresh_btn.place(
+    exit_btn.config(font=("Arial", font_size), bg="#000000")
+    exit_btn.place(
         x=current_width - button_size - margin,
         y=button_y,
         width=button_size,
         height=button_size,
     )
+
+    if is_sleep_mode():
+        return
+
+    exit_btn.config(font=("Arial", font_size), bg=ACCENT_COLOR)
+    refresh_btn.config(font=("Arial", font_size))
+    fullscreen_btn.config(font=("Arial", font_size))
+
+    refresh_btn.place(
+        x=current_width - (2 * button_size) - margin,
+        y=button_y,
+        width=button_size,
+        height=button_size,
+    )
     fullscreen_btn.place(
-        x=margin,
+        x=current_width - (3 * button_size) - margin,
         y=button_y,
         width=button_size,
         height=button_size,
@@ -123,7 +134,7 @@ def update_dashboard() -> None:
 
 
 def run_dashboard() -> None:
-    global tk_root, tk_label, refresh_btn, fullscreen_btn, loading_label
+    global tk_root, tk_label, refresh_btn, fullscreen_btn, exit_btn, loading_label
     global current_width, current_height, last_streak_date
 
     tk_root = tk.Tk()
@@ -132,8 +143,6 @@ def run_dashboard() -> None:
     tk_root.resizable(False, False)
     tk_root.attributes("-fullscreen", FULL_SCREEN)
     tk_root.config(cursor="none")
-
-    tk_root.bind("<Escape>", lambda e: tk_root.destroy())
 
     frame = tk.Frame(tk_root)
     frame.pack(expand=True, fill="both")
@@ -160,6 +169,8 @@ def run_dashboard() -> None:
         pady=0,
         highlightthickness=0,
     )
+
+    exit_btn = tk.Button(frame, text="✕", command=tk_root.destroy, **shared_btn_config)
     refresh_btn = tk.Button(
         frame, text="⟳", command=refresh_dashboard, **shared_btn_config
     )
