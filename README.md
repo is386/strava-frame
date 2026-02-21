@@ -7,7 +7,7 @@ A Strava Dashboard I use on my Raspberry Pi frame. This code is not Raspbery Pi 
 ## Features
 
 - Strava API Integration
-- Yearly stats, monthly mileage, the latest run, and current streak
+- Yearly stats, monthly mileage, the latest run w/ PR data, and current streak
 - Dark Mode and Custom Accent Colors
 - Auto Sleep
 

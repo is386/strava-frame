@@ -1,4 +1,5 @@
 import logging
+import re
 from config import STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REFRESH_TOKEN
 from stravalib.client import Client
 from stravalib.model import SummaryActivity
@@ -9,26 +10,31 @@ from requests.exceptions import RequestException
 logging.getLogger("stravalib").setLevel(logging.ERROR)
 
 METERS_PER_MILE = 1609.344
-BEST_EFFORT_NAMES = {
-    "400m": "400m",
-    "800m": "800m",
-    "1K": "1K",
-    "1 mile": "1mi",
-    "2 mile": "2mi",
-    "5K": "5K",
-    "10K": "10K",
-    "15K": "15K",
-    "10 mile": "10mi",
-    "20K": "20K",
-    "Half-Marathon": "13.1mi",
-    "30K": "30K",
-    "Marathon": "26.2mi",
-    "50K": "50K",
-}
 
 streak_cache = -1
 latest_activity_cache = {}
 new_activity_exists = False
+
+def format_effort_name(name: str) -> str:
+    name = name.strip()
+    
+    if name == "Half-Marathon":
+        return "13.1mi"
+    if name == "Marathon":
+        return "26.2mi"
+    
+    if re.match(r"^\d+m$", name):
+        return name
+    
+    if re.match(r"^\d+K$", name):
+        return name
+    
+    match = re.match(r"^(\d+)\s+miles?$", name, re.IGNORECASE)
+    if match:
+        return f"{match.group(1)}mi"
+    
+    return name
+
 
 def get_strava_client() -> Client:
     client = Client()
@@ -110,15 +116,8 @@ def get_pr(activity: SummaryActivity) -> str | None:
         gold_efforts = [e for e in (detailed.best_efforts or []) if e.pr_rank == 1]
         if not gold_efforts:
             return None
-        best = max(
-            gold_efforts,
-            key=lambda e: (
-                list(BEST_EFFORT_NAMES.keys()).index(e.name)
-                if e.name in BEST_EFFORT_NAMES.keys()
-                else -1
-            ),
-        )
-        return BEST_EFFORT_NAMES.get(best.name)
+        best = max(gold_efforts, key=lambda e: e.distance or 0)
+        return format_effort_name(best.name)
     except (RuntimeError, RequestException) as e:
         print(e)
         return None
