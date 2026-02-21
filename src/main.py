@@ -17,7 +17,6 @@ from render import (
     DARK_TEXT_COLOR,
     LIGHT_TEXT_COLOR,
 )
-from data import refresh_streak
 from datetime import datetime
 from PIL import ImageTk
 
@@ -30,7 +29,6 @@ fullscreen_btn = None
 loading_label = None
 current_width = WIDTH
 current_height = HEIGHT
-last_streak_date = None
 
 
 def is_sleep_mode() -> bool:
@@ -106,15 +104,6 @@ def update_button_position() -> None:
     )
 
 
-def midnight_streak_check() -> None:
-    global last_streak_date
-    today = datetime.now().date()
-    if last_streak_date != today:
-        last_streak_date = today
-        refresh_streak()
-    tk_root.after(60_000, midnight_streak_check)
-
-
 def update_dashboard() -> None:
     global tk_photo
 
@@ -135,7 +124,7 @@ def update_dashboard() -> None:
 
 def run_dashboard() -> None:
     global tk_root, tk_label, refresh_btn, fullscreen_btn, exit_btn, loading_label
-    global current_width, current_height, last_streak_date
+    global current_width, current_height
 
     tk_root = tk.Tk()
     tk_root.title("")
@@ -181,9 +170,6 @@ def run_dashboard() -> None:
     tk_root.update_idletasks()
     current_width, current_height = read_window_dimensions()
 
-    refresh_streak()
-    last_streak_date = datetime.now().date()
-    tk_root.after(60_000, midnight_streak_check)
     update_dashboard()
     tk_root.mainloop()
 

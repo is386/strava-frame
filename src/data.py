@@ -26,9 +26,9 @@ BEST_EFFORT_NAMES = {
     "50K": "50K",
 }
 
-activities_cache = []
 streak_cache = -1
-
+latest_activity_cache = {}
+new_activity_exists = False
 
 def get_strava_client() -> Client:
     client = Client()
@@ -112,13 +112,15 @@ def get_pr(activity: SummaryActivity) -> str | None:
         )
         return BEST_EFFORT_NAMES.get(best.name)
     except (RuntimeError, RequestException) as e:
-        print(f"Failed to fetch PR data: {e}")
+        print(e)
         return None
 
 
 def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
+    global new_activity_exists, latest_activity_cache
+
     if not activities:
-        return {
+        latest_activity_cache = {
             "miles": 0,
             "time": "00:00",
             "pace": "00:00",
@@ -126,13 +128,21 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
             "date": "Zerouary 0",
             "medal": None,
         }
+        return latest_activity_cache
 
     activity = activities[-1]
+
+    new_activity_exists = activity.id != latest_activity_cache.get("id")
+    if not new_activity_exists:
+        return latest_activity_cache
+
     distance = activity.distance or 0
     moving_time = activity.moving_time or 0
     miles = meters_to_miles(distance)
     pace = calculate_pace(distance, moving_time)
-    return {
+
+    latest_activity_cache = {
+        "id": activity.id,
         "miles": round(miles, 2),
         "time": seconds_to_timestamp(moving_time),
         "pace": seconds_to_timestamp(pace) if pace > 0 else "00:00",
@@ -140,6 +150,7 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> dict:
         "date": activity.start_date_local.strftime("%B %-d"),
         "pr": get_pr(activity),
     }
+    return latest_activity_cache
 
 
 def parse_yearly_data(
@@ -164,28 +175,31 @@ def parse_yearly_data(
     )
 
 
-def refresh_streak():
-    global streak_cache
-    try:
-        streak_cache = calculate_streak(get_all_activities())
-    except (RuntimeError, RequestException) as e:
-        print(f"Failed to fetch streak: {e}")
+def refresh_activities() -> Tuple[int, float, float, list[float], dict, int]:
+    global streak_cache, new_activity_exists
 
-
-def refresh_activities() -> Tuple[int, float, float, list[float], dict]:
-    global activities_cache
     try:
-        activities_cache = get_ytd_activities()
+        activities = get_ytd_activities()
     except (RuntimeError, RequestException) as e:
         print(e)
-    latest_activity = parse_latest_activity(activities_cache)
+
+    latest_activity = parse_latest_activity(activities)
     total_activities, total_miles, avg_weekly_miles, miles_per_month = (
-        parse_yearly_data(activities_cache)
+        parse_yearly_data(activities)
     )
+
+    if new_activity_exists:
+        new_activity_exists = False
+        try:
+            streak_cache = calculate_streak(get_all_activities())
+        except (RuntimeError, RequestException) as e:
+            print(e)
+
     return (
         total_activities,
         total_miles,
         avg_weekly_miles,
         list(miles_per_month),
         latest_activity,
+        streak_cache
     )
