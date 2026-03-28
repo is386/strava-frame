@@ -5,6 +5,7 @@ from stravalib.client import Client
 from stravalib.model import SummaryActivity
 from datetime import datetime, timedelta
 from typing import Tuple, TypedDict
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 logging.getLogger("stravalib").setLevel(logging.ERROR)
 
@@ -45,6 +46,7 @@ def format_effort_name(name: str) -> str:
     return name
 
 
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=2, min=2, max=32))
 def get_strava_client() -> Client:
     client = Client()
     tokens = client.refresh_access_token(
