@@ -1,3 +1,4 @@
 requests==2.32.5
 stravalib==2.4
 pillow==12.1.0
+tenacity==9.1.4
