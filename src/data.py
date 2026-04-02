@@ -121,8 +121,6 @@ def get_ytd_activities() -> list[SummaryActivity]:
 
 
 def get_pr(activity: SummaryActivity) -> str | None:
-    if not activity.pr_count:
-        return None
     detailed = get_strava_client().get_activity(activity.id)
     gold_efforts = [e for e in (detailed.best_efforts or []) if e.pr_rank == 1]
     if not gold_efforts:
