@@ -208,7 +208,7 @@ def run_dashboard() -> None:
     fullscreen_btn = tk.Button(
         frame, text="⤢", command=toggle_fullscreen, **shared_btn_config
     )
-    advanced_btn = tk.Button(frame, text="🛈", command=toggle_advanced_view, **shared_btn_config)
+    advanced_btn = tk.Button(frame, text="∑", command=toggle_advanced_view, **shared_btn_config)
 
     tk_root.update_idletasks()
     current_width, current_height = read_window_dimensions()
