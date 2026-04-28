@@ -469,6 +469,207 @@ class Renderer:
                     fill=self.border_color,
                     width=1,
                 )
+    def lighten_hex(self, hex_color, amount=0.5):
+        """
+        amount: 0 → no change, 1 → white
+        hex_color: "#RRGGBB"
+        """
+        hex_color = hex_color.lstrip('#')
+
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+
+        r = int(r + (255 - r) * amount)
+        g = int(g + (255 - g) * amount)
+        b = int(b + (255 - b) * amount)
+
+        return f'#{r:02x}{g:02x}{b:02x}'
+
+    def _draw_trend_line_card(
+        self,
+        draw: ImageDraw.Draw,
+        data: list[float],
+        title: str,
+        x0: int,
+        y0: int,
+        x1: int,
+        y1: int,
+    ):
+        """Draw a single trend line graph inside a card."""
+        self._draw_card(draw, x0, y0, x1, y1)
+
+        inner_x0 = x0 + self.inner_padding
+        inner_y0 = y0 + self.inner_padding
+        inner_x1 = x1 - self.inner_padding
+        inner_y1 = y1 - self.inner_padding
+
+        draw.text(
+            (inner_x0, inner_y0),
+            title,
+            font=self.font_bold_medium,
+            fill=self.text_color,
+        )
+        _, title_h = self._text_size(draw, title, self.font_bold_medium)
+
+        plot_top = inner_y0 + title_h + self._sc(15)
+        plot_bottom = inner_y1
+        plot_left = inner_x0
+        plot_right = inner_x1
+        plot_w = plot_right - plot_left
+        plot_h = plot_bottom - plot_top
+
+        if not data or len(data) < 2:
+            self._draw_text_centered(
+                draw,
+                "No data",
+                self.font_regular_small,
+                (x0 + x1) // 2,
+                (y0 + y1) // 2,
+                self.label_color,
+            )
+            return
+
+        min_val = min(data)
+        max_val = max(data)
+        val_range = max_val - min_val or 1
+
+        def to_px(val: float, idx: int) -> tuple[int, int]:
+            px = plot_left + int(idx / (len(data) - 1) * plot_w)
+            py = plot_bottom - int((val - min_val) / val_range * plot_h)
+            return px, py
+
+        # Filled area under the curve
+        accent_r = int(self.accent_color[1:3], 16)
+        accent_g = int(self.accent_color[3:5], 16)
+        accent_b = int(self.accent_color[5:7], 16)
+
+        fill_img = Image.new("RGBA", (x1 - x0, y1 - y0), (0, 0, 0, 0))
+        fill_draw = ImageDraw.Draw(fill_img)
+
+        poly_points = [(to_px(v, i)[0] - x0, to_px(v, i)[1] - y0) for i, v in enumerate(data)]
+        poly_points = [(plot_left - x0, plot_bottom - y0)] + poly_points + [(plot_right - x0, plot_bottom - y0)]
+        fill_draw.polygon(poly_points, fill=(accent_r, accent_g, accent_b, 40))
+
+        # Compose fill onto the base card (RGBA -> RGB merge)
+        base_rgba = Image.new("RGBA", (x1 - x0, y1 - y0), (0, 0, 0, 0))
+        base_rgba = Image.alpha_composite(base_rgba, fill_img)
+        # We need to paste onto the main draw's image — caller handles that via returned overlay
+        # Instead, draw directly with a semi-transparent workaround using repeated thin rects
+        for i, v in enumerate(data):
+            px, py = to_px(v, i)
+            alpha_steps = 3
+            for step in range(alpha_steps):
+                draw.rectangle(
+                    [px - x0 + x0, py, px - x0 + x0 + 1, plot_bottom],
+                    fill=self.accent_color,
+                )
+            # Overwrite with card color for a "fade" effect using vertical gradient rects
+        # Draw filled area as a polygon approximation with card-blended color
+        # Use a simple horizontal slice approach for the fill
+        line_points = [to_px(v, i) for i, v in enumerate(data)]
+        for i in range(len(line_points) - 1):
+            lx0, ly0 = line_points[i]
+            lx1, ly1 = line_points[i + 1]
+            draw.polygon(
+                [(lx0, ly0), (lx1, ly1), (lx1, plot_bottom), (lx0, plot_bottom)],
+                fill=self.card_color,
+            )
+
+        fill_color_light = self.lighten_hex(self.accent_color, 0.6)
+        poly_fill = [(plot_left, plot_bottom)] + line_points + [(plot_right, plot_bottom)]
+        draw.polygon(poly_fill, fill=fill_color_light)
+
+        # Re-draw the card background above the line to create a "fill only below" look
+        # by drawing card-colored polygons above each segment
+        for i in range(len(line_points) - 1):
+            lx0, ly0 = line_points[i]
+            lx1, ly1 = line_points[i + 1]
+            top = min(ly0, ly1) - 1
+            if top > plot_top:
+                draw.polygon(
+                    [(lx0, plot_top), (lx1, plot_top), (lx1, ly1), (lx0, ly0)],
+                    fill=self.card_color,
+                )
+
+        # Draw the line itself on top
+        line_thickness = max(2, self._sc(2))
+        for i in range(len(line_points) - 1):
+            lx0, ly0 = line_points[i]
+            lx1, ly1 = line_points[i + 1]
+            draw.line([(lx0, ly0), (lx1, ly1)], fill=self.accent_color, width=line_thickness)
+
+        # Draw dots at each data point
+        dot_r = max(3, self._sc(3))
+        for px, py in line_points:
+            draw.ellipse(
+                [(px - dot_r, py - dot_r), (px + dot_r, py + dot_r)],
+                fill=self.accent_color,
+            )
+
+    def _draw_trends_image(
+        self,
+        pace_trend: list[float],
+        weekly_mileage_trend: list[float],
+        cadence_trend: list[float],
+        heart_rate_trend: list[float],
+    ) -> PILImage:
+        """Render a 2x2 grid of trend line cards (4th cell left empty)."""
+        img = Image.new("RGB", (self.width, self.height), self.bg_color)
+        draw = ImageDraw.Draw(img)
+
+        self._draw_header(draw)
+
+        content_top = self.header_height + self.margin
+        content_bottom = self.height - self.margin
+        content_left = self.margin
+        content_right = self.width - self.margin
+
+        content_w = content_right - content_left
+        content_h = content_bottom - content_top
+
+        half_w = (content_w - self.card_spacing) // 2
+        half_h = (content_h - self.card_spacing) // 2
+
+        # Grid positions: (col, row) -> (x0, y0, x1, y1)
+        cells = [
+            (
+                content_left,
+                content_top,
+                content_left + half_w,
+                content_top + half_h,
+            ),
+            (
+                content_left + half_w + self.card_spacing,
+                content_top,
+                content_right,
+                content_top + half_h,
+            ),
+            (
+                content_left,
+                content_top + half_h + self.card_spacing,
+                content_left + half_w,
+                content_bottom,
+            ),
+            (
+                content_left + half_w + self.card_spacing,
+                content_top + half_h + self.card_spacing,
+                content_right,
+                content_bottom,
+            ),
+        ]
+
+        trend_cards = [
+            (weekly_mileage_trend, "Weekly Mileage (mi)"),
+            (pace_trend, "Pace (min/mi)"),
+            (heart_rate_trend, "Heart Rate (bpm)"),
+            (cadence_trend, "Cadence (spm)"),
+        ]
+
+        for (x0, y0, x1, y1), (data, title) in zip(cells, trend_cards):
+            self._draw_trend_line_card(draw, data, title, x0, y0, x1, y1)
+
+        return img
 
     def render(
         self,
@@ -478,7 +679,11 @@ class Renderer:
         mileage_per_month: list[float],
         latest_activity: LatestActivity,
         streak: int = 0,
-    ) -> PILImage:
+        pace_trend: list[float] | None = None,
+        weekly_mileage_trend: list[float] | None = None,
+        cadence_trend: list[float] | None = None,
+        heart_rate_trend: list[float] | None = None,
+    ) -> tuple[PILImage, PILImage]:
         img = Image.new("RGB", (self.width, self.height), self.bg_color)
         draw = ImageDraw.Draw(img)
 
@@ -492,15 +697,26 @@ class Renderer:
         )
         self._draw_streak(draw, img, streak, left_width, top_offset=graph_bottom)
 
-        return img
+        trends_img = self._draw_trends_image(
+            pace_trend or [],
+            weekly_mileage_trend or [],
+            cadence_trend or [],
+            heart_rate_trend or [],
+        )
+
+        return img, trends_img
 
 
-def generate_image(width: int, height: int) -> PILImage:
+def generate_image(width: int, height: int) -> tuple[PILImage, PILImage]:
     (
         total_activities,
         total_miles,
         avg_weekly_miles,
         miles_per_month,
+        pace_trend,
+        weekly_mileage_trend,
+        cadence_trend,
+        heart_rate_trend,
         latest_activity,
         streak,
     ) = refresh_activities()
@@ -512,6 +728,10 @@ def generate_image(width: int, height: int) -> PILImage:
         miles_per_month,
         latest_activity,
         streak,
+        pace_trend=pace_trend,
+        weekly_mileage_trend=weekly_mileage_trend,
+        cadence_trend=cadence_trend,
+        heart_rate_trend=heart_rate_trend,
     )
 
 

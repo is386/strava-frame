@@ -6,6 +6,7 @@ from stravalib.model import SummaryActivity
 from datetime import datetime, timedelta
 from typing import Tuple, TypedDict
 from tenacity import retry, stop_after_attempt, wait_exponential
+from collections import defaultdict
 
 logging.getLogger("stravalib").setLevel(logging.ERROR)
 
@@ -165,19 +166,47 @@ def parse_latest_activity(activities: list[SummaryActivity]) -> LatestActivity:
     }
     return latest_activity_cache
 
-
 def parse_yearly_data(
     activities: list[SummaryActivity],
-) -> Tuple[int, float, float, list[float]]:
+) -> Tuple[int, float, float, list[float], list[float], list[float], list[float], list[float]]:
     total_miles = 0.0
     miles_per_month = [0.0] * 12
+    pace_trend = []
+    cadence_trend = []
+    heart_rate_trend = []
+
+    weekly_miles_map = defaultdict(float)
 
     for activity in activities:
         miles = meters_to_miles(activity.distance or 0)
         total_miles += miles
+
+        # Monthly
         miles_per_month[activity.start_date_local.month - 1] += miles
 
+        # Weekly (ISO year + week prevents collisions across years)
+        iso_year, iso_week, _ = activity.start_date_local.isocalendar()
+        weekly_miles_map[(iso_year, iso_week)] += miles
+
+        # Trends
+        pace_trend.append(
+            calculate_pace(activity.distance or 0, activity.moving_time or 0)
+        )
+
+        if activity.average_cadence:
+            cadence_trend.append(activity.average_cadence * 2)
+
+        if activity.average_heartrate and activity.average_heartrate > 120:
+            heart_rate_trend.append(activity.average_heartrate)
+
+    # Final formatting
     miles_per_month = [round(m, 2) for m in miles_per_month]
+
+    # Sort weeks chronologically and extract values
+    weekly_mileage_trend = [
+        round(weekly_miles_map[k], 2)
+        for k in sorted(weekly_miles_map)
+    ]
     weeks_ytd = max(1, datetime.now().isocalendar().week)
 
     return (
@@ -185,16 +214,19 @@ def parse_yearly_data(
         round(total_miles, 2),
         round(total_miles / weeks_ytd, 2),
         miles_per_month,
+        pace_trend,
+        weekly_mileage_trend,
+        cadence_trend,
+        heart_rate_trend
     )
 
-
-def refresh_activities() -> Tuple[int, float, float, list[float], LatestActivity, int]:
+def refresh_activities() -> Tuple[int, float, float, list[float], list[float], list[float], list[float], list[float], LatestActivity, int]:
     global streak_cache, new_activity_exists
 
     activities = get_ytd_activities()
 
     latest_activity = parse_latest_activity(activities)
-    total_activities, total_miles, avg_weekly_miles, miles_per_month = (
+    total_activities, total_miles, avg_weekly_miles, miles_per_month, pace_trend, weekly_mileage_trend, cadence_trend, heart_rate_trend = (
         parse_yearly_data(activities)
     )
 
@@ -209,6 +241,10 @@ def refresh_activities() -> Tuple[int, float, float, list[float], LatestActivity
         total_miles,
         avg_weekly_miles,
         list(miles_per_month),
+        pace_trend, 
+        weekly_mileage_trend,
+        cadence_trend,
+        heart_rate_trend,
         latest_activity,
         streak_cache,
     )
