@@ -29,9 +29,12 @@ tk_photo = None
 exit_btn = None
 refresh_btn = None
 fullscreen_btn = None
+advanced_btn = None
 loading_label = None
 current_width = WIDTH
 current_height = HEIGHT
+show_advanced = False
+imgs = None
 
 
 def is_sleep_mode() -> bool:
@@ -44,6 +47,7 @@ def show_loading() -> None:
     exit_btn.place_forget()
     refresh_btn.place_forget()
     fullscreen_btn.place_forget()
+    advanced_btn.place_forget()
     loading_label.place(relx=0.5, rely=0.5, anchor="center")
     tk_root.update_idletasks()
 
@@ -59,6 +63,15 @@ def toggle_fullscreen(event=None) -> None:
     show_loading()
     tk_root.after(1000, on_resize_settled)
 
+def toggle_advanced_view() -> None:
+    global imgs, tk_photo, show_advanced
+    show_advanced = not show_advanced 
+    img = imgs[0]
+    if show_advanced:
+        img = imgs[1]
+
+    tk_photo = ImageTk.PhotoImage(img)
+    tk_label.config(image=tk_photo)
 
 def on_resize_settled() -> None:
     global current_width, current_height
@@ -88,11 +101,13 @@ def update_button_position() -> None:
         exit_btn.config(font=("Arial", font_size), bg="#000000")
         refresh_btn.place_forget()
         fullscreen_btn.place_forget()
+        advanced_btn.place_forget()
         return
 
     exit_btn.config(font=("Arial", font_size), bg=ACCENT_COLOR)
     refresh_btn.config(font=("Arial", font_size))
     fullscreen_btn.config(font=("Arial", font_size))
+    advanced_btn.config(font=("Arial", font_size))
 
     refresh_btn.place(
         x=current_width - (2 * button_size),
@@ -106,15 +121,23 @@ def update_button_position() -> None:
         width=button_size,
         height=button_size,
     )
-
+    advanced_btn.place(
+        x=current_width - (4 * button_size),
+        y=button_y,
+        width=button_size,
+        height=button_size,
+    )
 
 def update_dashboard() -> None:
-    global tk_photo
+    global show_advanced, tk_photo, imgs
 
     if is_sleep_mode():
         img = generate_sleep_image(current_width, current_height)
     else:
-        img = generate_image(current_width, current_height)
+        imgs = generate_image(current_width, current_height)
+        img = imgs[0]
+        if show_advanced:
+            img = imgs[1]
 
     update_button_position()
     tk_photo = ImageTk.PhotoImage(img)
@@ -140,7 +163,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 
 
 def run_dashboard() -> None:
-    global tk_root, tk_label, refresh_btn, fullscreen_btn, exit_btn, loading_label
+    global tk_root, tk_label, refresh_btn, fullscreen_btn, exit_btn, advanced_btn, loading_label
     global current_width, current_height
 
     tk_root = tk.Tk()
@@ -185,6 +208,7 @@ def run_dashboard() -> None:
     fullscreen_btn = tk.Button(
         frame, text="⤢", command=toggle_fullscreen, **shared_btn_config
     )
+    advanced_btn = tk.Button(frame, text="🛈", command=toggle_advanced_view, **shared_btn_config)
 
     tk_root.update_idletasks()
     current_width, current_height = read_window_dimensions()
