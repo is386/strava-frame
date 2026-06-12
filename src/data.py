@@ -118,7 +118,8 @@ def get_all_activities() -> list[SummaryActivity]:
 
 def get_ytd_activities() -> list[SummaryActivity]:
     jan_first = datetime(year=datetime.now().year, month=1, day=1)
-    return list(get_strava_client().get_activities(after=jan_first))
+    activities = list(get_strava_client().get_activities(after=jan_first))
+    return [activity for activity in activities if activity.sport_type == "Run"]
 
 
 def get_pr(activity: SummaryActivity) -> str | None:
