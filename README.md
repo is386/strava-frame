@@ -1,13 +1,13 @@
-# Strava Frame
+# Running Frame
 
-A Strava Dashboard I use on my Raspberry Pi frame. This code is not Raspbery Pi specific and I have tested it on Linux Mint and Windows 11 w/ WSL2.
+A running dashboard I use on my Raspberry Pi frame, backed by Intervals.icu. This code is not Raspbery Pi specific and I have tested it on Linux Mint and Windows 11 w/ WSL2.
 
 <img src="docs/dashboard.png">
 
 ## Features
 
-- Strava API Integration
-- Yearly stats, monthly mileage, the latest run w/ PR data, and current streak
+- Intervals.icu API Integration (Garmin Connect as the data source)
+- Yearly stats, monthly mileage, the latest run, and current weekly streak
 - Dark Mode and Custom Accent Colors
 - Auto Sleep
 
@@ -23,36 +23,34 @@ sudo apt update
 sudo apt install python3-tk, python3-pil.imagetk
 ```
 
-### 3. Generate Strava API tokens
+### 3. Create an Intervals.icu account
 
-1. Go to [Strava API Settings](https://www.strava.com/settings/api).
-2. Create a new application. Make sure **Authorization Callback Domain** is set to `localhost`.
-3. Copy the following values for your app:
-   - **Client ID**
-   - **Client Secret**
-   - **Refresh Token**
-4. Run the following command to generate a config file:
+1. Sign up at [intervals.icu](https://intervals.icu).
+2. Go to **Settings** and click **Connect** next to **Garmin Connect**.
+
+Activities sync within about 5 minutes of your watch syncing to Garmin Connect.
+Intervals.icu backfills roughly a year of history, which arrives gradually over the
+first few hours after connecting.
+
+### 4. Generate a config file
 
 ```bash
 cp config-example.toml config.toml
 ```
 
-Then fill in the client id, client secret, and refresh token.
+Then get your API key from **Settings -> Developer Settings** on Intervals.icu and fill
+in `api_key`. Leave `athlete_id` as `"0"` unless you want to be explicit about it.
 
-### 4. Grant `read_all` permission
+#### `streak_carryover`
 
-1. Run the following to generate a new refresh token with `read_all` permission
+The streak counts consecutive weeks containing at least one run, computed fresh from the
+trailing 12 months on every refresh. Anything inside that window self-corrects, so
+deleted runs, late syncs and backdated activities all just work.
 
-```bash
-chmod +x token.sh
-./token.sh
-```
-
-2. You will be prompted to open a link in your browser. After opening the link, click "Authorize"
-
-3. After clicking "Authorize", you will be redirected to an error page. Copy the value from the `code=` query parameter of the URL in the browser
-
-4. Paste the value into your terminal. Copy the newly generated refresh token and replace the value in your `config.toml` file.
+Only ~52 weeks are visible, though, so a streak older than that would silently cap.
+`streak_carryover` is the number of consecutive weeks your streak had already reached
+before the window begins. Leave it `0` unless your streak is longer than a year, and
+reset it to `0` if you ever break one that was.
 
 ## Usage
 

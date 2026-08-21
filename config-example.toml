@@ -1,7 +1,7 @@
-[strava]
-client_id = "YOUR_CLIENT_ID"
-client_secret = "YOUR_CLIENT_SECRET"
-refresh_token = "YOUR_REFRESH_TOKEN"
+[intervals]
+api_key = "YOUR_API_KEY"
+athlete_id = "0"
+streak_carryover = 0
 
 [display]
 accent_color = "#FC4C02"

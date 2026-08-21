@@ -1,0 +1,3 @@
+[tool.basedpyright]
+include = ["src"]
+typeCheckingMode = "standard"

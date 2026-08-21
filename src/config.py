@@ -2,15 +2,17 @@ import os
 import tomllib
 import re
 import sys
-
-os.environ["SILENCE_TOKEN_WARNINGS"] = "true"
+from typing import Any
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _CONFIG_PATH = os.path.join(_SCRIPT_DIR, "..", "config.toml")
 
 HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
-_DEFAULTS = {
+_DEFAULTS: dict[str, dict[str, Any]] = {
+    "intervals": {
+        "streak_carryover": 0,
+    },
     "display": {
         "accent_color": "#FC4C02",
         "dark_mode": False,
@@ -32,7 +34,7 @@ _errors: list[str] = []
 _warnings: list[str] = []
 
 
-def _get(config: dict, section: str, key: str):
+def _get(config: dict[str, Any], section: str, key: str) -> Any:
     value = config.get(section, {}).get(key)
     if value is None:
         default = _DEFAULTS.get(section, {}).get(key)
@@ -41,14 +43,14 @@ def _get(config: dict, section: str, key: str):
     return value
 
 
-def _require(config: dict, section: str, key: str):
+def _require(config: dict[str, Any], section: str, key: str) -> Any:
     value = config.get(section, {}).get(key)
     if value is None:
         _errors.append(f"[{section}] '{key}' is required but missing from config.toml")
     return value
 
 
-def _validate_hex_color(value: str, section: str, key: str) -> str:
+def _validate_hex_color(value: object, section: str, key: str) -> str:
     if not isinstance(value, str):
         _errors.append(
             f"[{section}] '{key}' must be a string, got {type(value).__name__}"
@@ -62,7 +64,7 @@ def _validate_hex_color(value: str, section: str, key: str) -> str:
     return value
 
 
-def _validate_bool(value, section: str, key: str) -> bool:
+def _validate_bool(value: object, section: str, key: str) -> bool:
     if not isinstance(value, bool):
         _errors.append(f"[{section}] '{key}' must be true or false, got {value!r}")
         return _DEFAULTS[section][key]
@@ -70,7 +72,11 @@ def _validate_bool(value, section: str, key: str) -> bool:
 
 
 def _validate_int(
-    value, section: str, key: str, min_val: int = None, max_val: int = None
+    value: object,
+    section: str,
+    key: str,
+    min_val: int | None = None,
+    max_val: int | None = None,
 ) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         _errors.append(f"[{section}] '{key}' must be an integer, got {value!r}")
@@ -84,10 +90,10 @@ def _validate_int(
     return value
 
 
-def _validate_str(value, section: str, key: str) -> str:
+def _validate_str(value: object, section: str, key: str) -> str:
     if not isinstance(value, str) or not value.strip():
         _errors.append(f"[{section}] '{key}' must be a non-empty string")
-        return None
+        return ""
     return value
 
 
@@ -101,13 +107,18 @@ except tomllib.TOMLDecodeError as e:
     print(f"ERROR: config.toml is not valid TOML: {e}", file=sys.stderr)
     sys.exit(1)
 
-_client_id = _require(_config, "strava", "client_id")
-_client_secret = _require(_config, "strava", "client_secret")
-_refresh_token = _require(_config, "strava", "refresh_token")
+_api_key = _require(_config, "intervals", "api_key")
+_athlete_id = _require(_config, "intervals", "athlete_id")
 
-STRAVA_CLIENT_ID: str = _validate_str(_client_id, "strava", "client_id")
-STRAVA_CLIENT_SECRET: str = _validate_str(_client_secret, "strava", "client_secret")
-STRAVA_REFRESH_TOKEN: str = _validate_str(_refresh_token, "strava", "refresh_token")
+INTERVALS_API_KEY: str = _validate_str(_api_key, "intervals", "api_key")
+INTERVALS_ATHLETE_ID: str = _validate_str(_athlete_id, "intervals", "athlete_id")
+
+STREAK_CARRYOVER: int = _validate_int(
+    _get(_config, "intervals", "streak_carryover"),
+    "intervals",
+    "streak_carryover",
+    min_val=0,
+)
 
 ACCENT_COLOR: str = _validate_hex_color(
     _get(_config, "display", "accent_color"), "display", "accent_color"
@@ -147,15 +158,18 @@ SLEEP_MODE_ENABLED: bool = _validate_bool(
     _get(_config, "sleep_mode", "enabled"), "sleep_mode", "enabled"
 )
 
+SLEEP_MODE_START: int
+SLEEP_MODE_END: int
+
 if SLEEP_MODE_ENABLED:
-    SLEEP_MODE_START: int = _validate_int(
+    SLEEP_MODE_START = _validate_int(
         _get(_config, "sleep_mode", "start_hour"),
         "sleep_mode",
         "start_hour",
         min_val=0,
         max_val=23,
     )
-    SLEEP_MODE_END: int = _validate_int(
+    SLEEP_MODE_END = _validate_int(
         _get(_config, "sleep_mode", "end_hour"),
         "sleep_mode",
         "end_hour",
@@ -167,8 +181,8 @@ if SLEEP_MODE_ENABLED:
             "[sleep_mode] 'start_hour' and 'end_hour' cannot be the same value"
         )
 else:
-    SLEEP_MODE_START: int = _DEFAULTS["sleep_mode"]["start_hour"]
-    SLEEP_MODE_END: int = _DEFAULTS["sleep_mode"]["end_hour"]
+    SLEEP_MODE_START = _DEFAULTS["sleep_mode"]["start_hour"]
+    SLEEP_MODE_END = _DEFAULTS["sleep_mode"]["end_hour"]
 
 if _warnings:
     print("Config warnings:", file=sys.stderr)

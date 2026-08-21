@@ -1,6 +1,7 @@
 import tkinter as tk
 import traceback
 import sys
+from typing import Any
 from pathlib import Path
 from config import (
     REFRESH_TIME,
@@ -22,19 +23,20 @@ from render import (
 )
 from datetime import datetime
 from PIL import ImageTk
+from PIL.Image import Image as PILImage
 
-tk_root = None
-tk_label = None
-tk_photo = None
-exit_btn = None
-refresh_btn = None
-fullscreen_btn = None
-advanced_btn = None
-loading_label = None
+tk_root: tk.Tk
+tk_label: tk.Label
+tk_photo: ImageTk.PhotoImage
+exit_btn: tk.Button
+refresh_btn: tk.Button
+fullscreen_btn: tk.Button
+advanced_btn: tk.Button
+loading_label: tk.Label
 current_width = WIDTH
 current_height = HEIGHT
 show_advanced = False
-imgs = None
+imgs: tuple[PILImage, PILImage]
 
 
 def is_sleep_mode() -> bool:
@@ -57,21 +59,23 @@ def read_window_dimensions() -> tuple[int, int]:
     return tk_root.winfo_width(), tk_root.winfo_height()
 
 
-def toggle_fullscreen(event=None) -> None:
+def toggle_fullscreen(_event: object = None) -> None:
     is_fullscreen = not tk_root.attributes("-fullscreen")
     tk_root.attributes("-fullscreen", is_fullscreen)
     show_loading()
     tk_root.after(1000, on_resize_settled)
 
+
 def toggle_advanced_view() -> None:
     global imgs, tk_photo, show_advanced
-    show_advanced = not show_advanced 
+    show_advanced = not show_advanced
     img = imgs[0]
     if show_advanced:
         img = imgs[1]
 
     tk_photo = ImageTk.PhotoImage(img)
     tk_label.config(image=tk_photo)
+
 
 def on_resize_settled() -> None:
     global current_width, current_height
@@ -128,6 +132,7 @@ def update_button_position() -> None:
         height=button_size,
     )
 
+
 def update_dashboard() -> None:
     global show_advanced, tk_photo, imgs
 
@@ -147,7 +152,7 @@ def update_dashboard() -> None:
     tk_root.after(REFRESH_TIME, update_dashboard)
 
 
-def handle_exception(exc_type, exc_value, exc_traceback):
+def handle_exception(exc_type, exc_value, exc_traceback) -> None:
     error_message = "".join(
         traceback.format_exception(exc_type, exc_value, exc_traceback)
     )
@@ -163,7 +168,14 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 
 
 def run_dashboard() -> None:
-    global tk_root, tk_label, refresh_btn, fullscreen_btn, exit_btn, advanced_btn, loading_label
+    global \
+        tk_root, \
+        tk_label, \
+        refresh_btn, \
+        fullscreen_btn, \
+        exit_btn, \
+        advanced_btn, \
+        loading_label
     global current_width, current_height
 
     tk_root = tk.Tk()
@@ -190,7 +202,7 @@ def run_dashboard() -> None:
     )
     loading_label.place(relx=0.5, rely=0.5, anchor="center")
 
-    shared_btn_config = dict(
+    shared_btn_config: dict[str, Any] = dict(
         font=("Arial", 20),
         bg=ACCENT_COLOR,
         fg=LIGHT_TEXT_COLOR if DARK_MODE else DARK_TEXT_COLOR,
@@ -208,7 +220,9 @@ def run_dashboard() -> None:
     fullscreen_btn = tk.Button(
         frame, text="⤢", command=toggle_fullscreen, **shared_btn_config
     )
-    advanced_btn = tk.Button(frame, text="⧉", command=toggle_advanced_view, **shared_btn_config)
+    advanced_btn = tk.Button(
+        frame, text="⧉", command=toggle_advanced_view, **shared_btn_config
+    )
 
     tk_root.update_idletasks()
     current_width, current_height = read_window_dimensions()

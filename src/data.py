@@ -1,14 +1,9 @@
-import logging
-import re
-from config import STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REFRESH_TOKEN
-from stravalib.client import Client
-from stravalib.model import SummaryActivity
+import requests
+from config import INTERVALS_API_KEY, INTERVALS_ATHLETE_ID, STREAK_CARRYOVER
 from datetime import datetime, timedelta
-from typing import Tuple, TypedDict
+from typing import TypedDict
 from tenacity import retry, stop_after_attempt, wait_exponential
 from collections import defaultdict
-
-logging.getLogger("stravalib").setLevel(logging.ERROR)
 
 
 class LatestActivity(TypedDict):
@@ -17,46 +12,13 @@ class LatestActivity(TypedDict):
     pace: str
     title: str
     date: datetime
-    medal: str | None
 
 
+API_BASE = "https://intervals.icu/api/v1"
 METERS_PER_MILE = 1609.34
-streak_cache = -1
-latest_activity_cache: LatestActivity = {}
-latest_activity_cache
-
-
-def format_effort_name(name: str) -> str:
-    name = name.strip()
-
-    if name == "Half-Marathon":
-        return "13.1mi"
-    if name == "Marathon":
-        return "26.2mi"
-
-    if re.match(r"^\d+m$", name):
-        return name
-
-    if re.match(r"^\d+K$", name):
-        return name
-
-    match = re.match(r"^(\d+)\s+miles?$", name, re.IGNORECASE)
-    if match:
-        return f"{match.group(1)}mi"
-
-    return name
-
-
-@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=2, min=2, max=32))
-def get_strava_client() -> Client:
-    client = Client()
-    tokens = client.refresh_access_token(
-        client_id=STRAVA_CLIENT_ID,
-        client_secret=STRAVA_CLIENT_SECRET,
-        refresh_token=STRAVA_REFRESH_TOKEN,
-    )
-    client.access_token = tokens["access_token"]
-    return client
+RUN_TYPES = {"Run", "VirtualRun"}
+CADENCE_MULTIPLIER = 2
+HISTORY_DAYS = 365
 
 
 def meters_to_miles(meters: float) -> float:
@@ -87,19 +49,37 @@ def week_start(date: datetime) -> datetime:
     )
 
 
-def streak_cache_is_stale() -> bool:
-    date = latest_activity_cache.get("date")
-    if date is None:
-        return False
-    previous_week = week_start(datetime.now()) - timedelta(weeks=1)
-    return week_start(date) < previous_week
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=2, min=2, max=32))
+def fetch_runs(oldest: datetime, newest: datetime) -> list[dict]:
+    response = requests.get(
+        f"{API_BASE}/athlete/{INTERVALS_ATHLETE_ID}/activities",
+        auth=("API_KEY", INTERVALS_API_KEY),
+        params={
+            "oldest": oldest.strftime("%Y-%m-%d"),
+            "newest": newest.strftime("%Y-%m-%d"),
+        },
+        timeout=30,
+    )
+    response.raise_for_status()
+
+    runs = []
+    for activity in response.json():
+        if activity.get("type") not in RUN_TYPES:
+            continue
+        activity["start_date_local"] = datetime.fromisoformat(
+            activity["start_date_local"]
+        )
+        runs.append(activity)
+
+    runs.sort(key=lambda activity: activity["start_date_local"])
+    return runs
 
 
-def calculate_streak(activities: list[SummaryActivity]) -> int:
-    if not activities:
+def calculate_streak(runs: list[dict], window_start: datetime) -> int:
+    if not runs:
         return 0
 
-    active_weeks = set(week_start(a.start_date_local) for a in activities)
+    active_weeks = set(week_start(run["start_date_local"]) for run in runs)
     current_week = week_start(datetime.now())
 
     if current_week not in active_weeks:
@@ -109,67 +89,42 @@ def calculate_streak(activities: list[SummaryActivity]) -> int:
     while current_week in active_weeks:
         streak += 1
         current_week -= timedelta(weeks=1)
+
+    if streak and current_week < week_start(window_start):
+        streak += STREAK_CARRYOVER
+
     return streak
 
 
-def get_all_activities() -> list[SummaryActivity]:
-    return list(get_strava_client().get_activities())
-
-
-def get_ytd_activities() -> list[SummaryActivity]:
-    jan_first = datetime(year=datetime.now().year, month=1, day=1)
-    activities = list(get_strava_client().get_activities(after=jan_first))
-    return [activity for activity in activities if activity.sport_type == "Run"]
-
-
-def get_pr(activity: SummaryActivity) -> str | None:
-    detailed = get_strava_client().get_activity(activity.id)
-    gold_efforts = [e for e in (detailed.best_efforts or []) if e.pr_rank == 1]
-    if not gold_efforts:
-        return None
-    best = max(gold_efforts, key=lambda e: e.distance or 0)
-    return format_effort_name(best.name)
-
-
-def parse_latest_activity(activities: list[SummaryActivity]) -> LatestActivity:
-    global new_activity_exists, latest_activity_cache
-
-    if not activities:
-        latest_activity_cache = {
+def parse_latest_activity(runs: list[dict]) -> LatestActivity:
+    if not runs:
+        return {
             "miles": 0,
             "time": "00:00",
             "pace": "00:00",
             "title": "No Activity",
             "date": datetime.now(),
-            "medal": None,
         }
-        return latest_activity_cache
 
-    activity = activities[-1]
-
-    new_activity_exists = activity.id != latest_activity_cache.get("id")
-    if not new_activity_exists:
-        return latest_activity_cache
-
-    distance = activity.distance or 0
-    moving_time = activity.moving_time or 0
-    miles = meters_to_miles(distance)
+    activity = runs[-1]
+    distance = activity.get("distance") or 0
+    moving_time = activity.get("moving_time") or 0
     pace = calculate_pace(distance, moving_time)
 
-    latest_activity_cache = {
-        "id": activity.id,
-        "miles": round(miles, 2),
+    return {
+        "miles": round(meters_to_miles(distance), 2),
         "time": seconds_to_timestamp(moving_time),
         "pace": seconds_to_timestamp(pace) if pace > 0 else "00:00",
-        "title": activity.name,
-        "date": activity.start_date_local,
-        "pr": get_pr(activity),
+        "title": activity.get("name") or "Untitled",
+        "date": activity["start_date_local"],
     }
-    return latest_activity_cache
+
 
 def parse_yearly_data(
-    activities: list[SummaryActivity],
-) -> Tuple[int, float, float, list[float], list[float], list[float], list[float], list[float]]:
+    runs: list[dict],
+) -> tuple[
+    int, float, float, list[float], list[float], list[float], list[float], list[float]
+]:
     total_miles = 0.0
     miles_per_month = [0.0] * 12
     pace_trend = []
@@ -178,74 +133,95 @@ def parse_yearly_data(
 
     weekly_miles_map = defaultdict(float)
 
-    for activity in activities:
-        miles = meters_to_miles(activity.distance or 0)
+    for activity in runs:
+        distance = activity.get("distance") or 0
+        moving_time = activity.get("moving_time") or 0
+        start_date = activity["start_date_local"]
+
+        miles = meters_to_miles(distance)
         total_miles += miles
 
         # Monthly
-        miles_per_month[activity.start_date_local.month - 1] += miles
+        miles_per_month[start_date.month - 1] += miles
 
         # Weekly (ISO year + week prevents collisions across years)
-        iso_year, iso_week, _ = activity.start_date_local.isocalendar()
+        iso_year, iso_week, _ = start_date.isocalendar()
         weekly_miles_map[(iso_year, iso_week)] += miles
 
         # Trends
-        pace_trend.append(
-            calculate_pace(activity.distance or 0, activity.moving_time or 0)
-        )
+        if distance and moving_time:
+            pace_trend.append(calculate_pace(distance, moving_time))
 
-        if activity.average_cadence:
-            cadence_trend.append(activity.average_cadence * 2)
+        cadence = activity.get("average_cadence")
+        if cadence:
+            cadence_trend.append(cadence * CADENCE_MULTIPLIER)
 
-        if activity.average_heartrate and activity.average_heartrate > 120:
-            heart_rate_trend.append(activity.average_heartrate)
+        heart_rate = activity.get("average_heartrate")
+        if heart_rate and heart_rate > 120:
+            heart_rate_trend.append(heart_rate)
 
     # Final formatting
     miles_per_month = [round(m, 2) for m in miles_per_month]
 
     # Sort weeks chronologically and extract values
     weekly_mileage_trend = [
-        round(weekly_miles_map[k], 2)
-        for k in sorted(weekly_miles_map)
+        round(weekly_miles_map[k], 2) for k in sorted(weekly_miles_map)
     ]
     weeks_ytd = max(1, datetime.now().isocalendar().week)
 
     return (
-        len(activities),
+        len(runs),
         round(total_miles, 2),
         round(total_miles / weeks_ytd, 2),
         miles_per_month,
         pace_trend,
         weekly_mileage_trend,
         cadence_trend,
-        heart_rate_trend
+        heart_rate_trend,
     )
 
-def refresh_activities() -> Tuple[int, float, float, list[float], list[float], list[float], list[float], list[float], LatestActivity, int]:
-    global streak_cache, new_activity_exists
 
-    activities = get_ytd_activities()
+def refresh_activities() -> tuple[
+    int,
+    float,
+    float,
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    list[float],
+    LatestActivity,
+    int,
+]:
+    now = datetime.now()
+    window_start = now - timedelta(days=HISTORY_DAYS)
 
-    latest_activity = parse_latest_activity(activities)
-    total_activities, total_miles, avg_weekly_miles, miles_per_month, pace_trend, weekly_mileage_trend, cadence_trend, heart_rate_trend = (
-        parse_yearly_data(activities)
-    )
+    all_runs = fetch_runs(window_start, now)
+    ytd_runs = [run for run in all_runs if run["start_date_local"].year == now.year]
 
-    if new_activity_exists:
-        new_activity_exists = False
-        streak_cache = calculate_streak(get_all_activities())
-    elif streak_cache_is_stale():
-        streak_cache = 0
+    latest_activity = parse_latest_activity(ytd_runs)
+    (
+        total_activities,
+        total_miles,
+        avg_weekly_miles,
+        miles_per_month,
+        pace_trend,
+        weekly_mileage_trend,
+        cadence_trend,
+        heart_rate_trend,
+    ) = parse_yearly_data(ytd_runs)
+
+    streak = calculate_streak(all_runs, window_start)
 
     return (
         total_activities,
         total_miles,
         avg_weekly_miles,
         list(miles_per_month),
-        pace_trend, 
+        pace_trend,
         weekly_mileage_trend,
         cadence_trend,
         heart_rate_trend,
         latest_activity,
-        streak_cache,
+        streak,
     )

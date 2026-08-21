@@ -2,6 +2,7 @@ import os
 from data import LatestActivity, refresh_activities
 from config import ACCENT_COLOR, DARK_MODE
 from datetime import datetime
+from typing import cast
 from PIL import Image, ImageDraw, ImageFont
 from PIL.Image import Image as PILImage
 
@@ -104,18 +105,24 @@ class Renderer:
     def _sc(self, value: float) -> int:
         return round(value * self.scale)
 
-    def _text_size(self, draw: ImageDraw.Draw, text: str, font) -> tuple[int, int]:
+    def _text_size(self, draw: ImageDraw.ImageDraw, text: str, font) -> tuple[int, int]:
         bbox = draw.textbbox((0, 0), text, font=font)
-        return bbox[2] - bbox[0], bbox[3] - bbox[1]
+        return int(bbox[2] - bbox[0]), int(bbox[3] - bbox[1])
 
     def _draw_text_centered(
-        self, draw: ImageDraw.Draw, text: str, font, center_x: int, y: int, color: str
+        self,
+        draw: ImageDraw.ImageDraw,
+        text: str,
+        font,
+        center_x: int,
+        y: float,
+        color: str,
     ):
         bbox = draw.textbbox((0, 0), text, font=font)
         x = center_x - (bbox[2] - bbox[0]) // 2 - bbox[0]
         draw.text((x, y), text, font=font, fill=color)
 
-    def _draw_card(self, draw: ImageDraw.Draw, x0: int, y0: int, x1: int, y1: int):
+    def _draw_card(self, draw: ImageDraw.ImageDraw, x0: int, y0: int, x1: int, y1: int):
         draw.rounded_rectangle(
             [x0, y0, x1, y1], radius=self._sc(8), fill=self.card_color
         )
@@ -129,31 +136,33 @@ class Renderer:
         b = int(hex_color[5:7], 16)
         icon = icon.convert("RGBA")
         pixels = icon.load()
+        if pixels is None:
+            return icon
         for y in range(icon.height):
             for x in range(icon.width):
-                pr, pg, pb, pa = pixels[x, y]
+                pr, pg, pb, pa = cast(tuple[int, int, int, int], pixels[x, y])
                 brightness = (pr + pg + pb) / 3
                 pixels[x, y] = (r, g, b, int((1 - brightness / 255) * pa))
         return icon
 
-    def _draw_header(self, draw: ImageDraw.Draw):
+    def _draw_header(self, draw: ImageDraw.ImageDraw):
         draw.rectangle(
             [(0, 0), (self.width, self.header_height)], fill=self.accent_color
         )
-        w, h = self._text_size(draw, "Strava Dashboard", self.font_bold_large)
+        w, h = self._text_size(draw, "Running Dashboard", self.font_bold_large)
         x = (self.width - w) // 2
         y = (self.header_height - h) // 2 + self._sc(5)
         draw.text(
-            (x, y), "Strava Dashboard", font=self.font_bold_large, fill=self.bg_color
+            (x, y), "Running Dashboard", font=self.font_bold_large, fill=self.bg_color
         )
 
     def _draw_stat(
         self,
-        draw: ImageDraw.Draw,
+        draw: ImageDraw.ImageDraw,
         value,
         label: str,
         center_x: int,
-        y: int,
+        y: float,
         decimal: bool,
     ):
         value_text = f"{value:.2f}" if decimal else str(value)
@@ -171,7 +180,7 @@ class Renderer:
         )
 
     def _draw_left_column(
-        self, draw: ImageDraw.Draw, total_mileage, weekly_mileage, activities
+        self, draw: ImageDraw.ImageDraw, total_mileage, weekly_mileage, activities
     ) -> int:
         left_width = self.width // self.LEFT_COLUMN_WIDTH_RATIO
         x0 = self.margin
@@ -227,7 +236,7 @@ class Renderer:
         return left_width
 
     def _draw_monthly_graph(
-        self, draw: ImageDraw.Draw, mileage_per_month: list[float], left_width: int
+        self, draw: ImageDraw.ImageDraw, mileage_per_month: list[float], left_width: int
     ) -> int:
         x0 = left_width + self.margin
         y0 = self.header_height + self.margin
@@ -301,7 +310,7 @@ class Renderer:
 
     def _draw_streak(
         self,
-        draw: ImageDraw.Draw,
+        draw: ImageDraw.ImageDraw,
         img: Image.Image,
         streak: int,
         left_width: int,
@@ -363,8 +372,7 @@ class Renderer:
 
     def _draw_latest_activity(
         self,
-        draw: ImageDraw.Draw,
-        img: Image.Image,
+        draw: ImageDraw.ImageDraw,
         activity: LatestActivity,
         left_width: int,
         top_offset: int,
@@ -387,29 +395,6 @@ class Renderer:
             (inner_x, inner_y0), title, font=self.font_bold_medium, fill=self.text_color
         )
         _, title_h = self._text_size(draw, title, self.font_bold_medium)
-
-        pr = activity.get("pr")
-        if pr:
-            medal_raw = Image.open(os.path.join(ASSETS_DIR, "medal.png")).convert(
-                "RGBA"
-            )
-            medal_h = self._sc(36)
-            medal_w = int(medal_raw.width * (medal_h / medal_raw.height))
-            medal_img = medal_raw.resize((medal_w, medal_h), Image.Resampling.LANCZOS)
-            pr_w, _ = self._text_size(draw, pr, self.font_regular_small)
-            block_w = max(medal_w, pr_w)
-            block_left = x1 - self.inner_padding - block_w
-            img.paste(
-                medal_img,
-                (block_left + (block_w - medal_w) // 2, inner_y0),
-                medal_img,
-            )
-            draw.text(
-                (block_left + (block_w - pr_w) // 2, inner_y0 + medal_h),
-                pr,
-                font=self.font_regular_small,
-                fill=self.label_color,
-            )
 
         date_y = inner_y0 + title_h + self._sc(6)
         draw.text(
@@ -469,12 +454,13 @@ class Renderer:
                     fill=self.border_color,
                     width=1,
                 )
+
     def lighten_hex(self, hex_color, amount=0.5):
         """
         amount: 0 → no change, 1 → white
         hex_color: "#RRGGBB"
         """
-        hex_color = hex_color.lstrip('#')
+        hex_color = hex_color.lstrip("#")
 
         r = int(hex_color[0:2], 16)
         g = int(hex_color[2:4], 16)
@@ -484,11 +470,11 @@ class Renderer:
         g = int(g + (255 - g) * amount)
         b = int(b + (255 - b) * amount)
 
-        return f'#{r:02x}{g:02x}{b:02x}'
+        return f"#{r:02x}{g:02x}{b:02x}"
 
     def _draw_trend_line_card(
         self,
-        draw: ImageDraw.Draw,
+        draw: ImageDraw.ImageDraw,
         data: list[float],
         title: str,
         x0: int,
@@ -547,8 +533,14 @@ class Renderer:
         fill_img = Image.new("RGBA", (x1 - x0, y1 - y0), (0, 0, 0, 0))
         fill_draw = ImageDraw.Draw(fill_img)
 
-        poly_points = [(to_px(v, i)[0] - x0, to_px(v, i)[1] - y0) for i, v in enumerate(data)]
-        poly_points = [(plot_left - x0, plot_bottom - y0)] + poly_points + [(plot_right - x0, plot_bottom - y0)]
+        poly_points = [
+            (to_px(v, i)[0] - x0, to_px(v, i)[1] - y0) for i, v in enumerate(data)
+        ]
+        poly_points = (
+            [(plot_left - x0, plot_bottom - y0)]
+            + poly_points
+            + [(plot_right - x0, plot_bottom - y0)]
+        )
         fill_draw.polygon(poly_points, fill=(accent_r, accent_g, accent_b, 40))
 
         # Compose fill onto the base card (RGBA -> RGB merge)
@@ -559,7 +551,7 @@ class Renderer:
         for i, v in enumerate(data):
             px, py = to_px(v, i)
             alpha_steps = 3
-            for step in range(alpha_steps):
+            for _ in range(alpha_steps):
                 draw.rectangle(
                     [px - x0 + x0, py, px - x0 + x0 + 1, plot_bottom],
                     fill=self.accent_color,
@@ -577,7 +569,9 @@ class Renderer:
             )
 
         fill_color_light = self.lighten_hex(self.accent_color, 0.6)
-        poly_fill = [(plot_left, plot_bottom)] + line_points + [(plot_right, plot_bottom)]
+        poly_fill = (
+            [(plot_left, plot_bottom)] + line_points + [(plot_right, plot_bottom)]
+        )
         draw.polygon(poly_fill, fill=fill_color_light)
 
         # Re-draw the card background above the line to create a "fill only below" look
@@ -597,7 +591,9 @@ class Renderer:
         for i in range(len(line_points) - 1):
             lx0, ly0 = line_points[i]
             lx1, ly1 = line_points[i + 1]
-            draw.line([(lx0, ly0), (lx1, ly1)], fill=self.accent_color, width=line_thickness)
+            draw.line(
+                [(lx0, ly0), (lx1, ly1)], fill=self.accent_color, width=line_thickness
+            )
 
         # Draw dots at each data point
         dot_r = max(3, self._sc(3))
@@ -693,7 +689,7 @@ class Renderer:
         )
         graph_bottom = self._draw_monthly_graph(draw, mileage_per_month, left_width)
         self._draw_latest_activity(
-            draw, img, latest_activity, left_width, top_offset=graph_bottom
+            draw, latest_activity, left_width, top_offset=graph_bottom
         )
         self._draw_streak(draw, img, streak, left_width, top_offset=graph_bottom)
 
